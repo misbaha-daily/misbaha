@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>مِسْبَحَة</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="./fonts/fonts.css">
+<style>
+html, body { margin: 0; min-height: 100%; }
+body { background: #081820; }
+
+.misbaha {
+    --bg-deep: #081820;
+    --bg: #0b2129;
+    --bg-card: #102b33;
+    --gold: #c9a24b;
+    --gold-hi: #f0d78c;
+    --cream: #f3ead3;
+    --cream-dim: rgba(243, 234, 211, .55);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    font-family: 'Tajawal', system-ui, sans-serif;
+    color: var(--cream);
+    background:
+        radial-gradient(1200px 800px at 50% -10%, #12333d 0%, transparent 60%),
+        radial-gradient(900px 700px at 50% 115%, #0e2c33 0%, transparent 55%),
+        var(--bg-deep);
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+    overscroll-behavior: none;
+}
+.app {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-sizing: border-box;
+    padding: calc(10px + var(--safe-top)) 18px calc(10px + var(--safe-bottom));
+}
+
+header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 9px; }
+.brand .dot {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: radial-gradient(circle at 32% 30%, var(--gold-hi), var(--gold) 55%, #7a5f21);
+    box-shadow: 0 0 18px rgba(201, 162, 75, .35), inset 0 0 6px rgba(0, 0, 0, .25);
+}
+.brand h1 {
+    margin: 0;
+    font-family: 'Amiri', serif;
+    font-size: 24px; font-weight: 700;
+    color: var(--gold-hi); letter-spacing: .5px;
+}
+.icon-btn {
+    width: 40px; height: 40px; border-radius: 14px;
+    border: 1px solid rgba(201, 162, 75, .25);
+    background: rgba(16, 43, 51, .7);
+    color: var(--cream-dim);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: transform .08s ease, color .2s, border-color .2s;
+    flex: none;
+    font: inherit;
+    position: relative;
+}
+.icon-btn:active { transform: scale(.92); }
+.icon-btn.on { color: var(--gold-hi); border-color: var(--gold); }
+.icon-btn svg { width: 20px; height: 20px; }
+
+/* dhikr card */
+.dhikr-zone { margin-top: 8px; text-align: center; min-height: 72px; display: flex; flex-direction: column; justify-content: center; }
+.dhikr-text {
+    font-family: 'Amiri', serif;
+    font-size: 28px; line-height: 1.5;
+    color: var(--cream);
+    text-shadow: 0 2px 18px rgba(0, 0, 0, .35);
+}
+.dhikr-switch {
+    margin-top: 8px; font-size: 14px; font-weight: 700; color: var(--gold-hi);
+    background: rgba(201, 162, 75, .14);
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+    box-shadow: 0 3px 14px rgba(201, 162, 75, .22), inset 0 1px 8px rgba(240, 215, 140, .08);
+    font-family: 'Tajawal', sans-serif;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px; align-self: center;
+    padding: 9px 20px;
+    min-height: 44px;
+    transition: transform .08s ease;
+}
+.dhikr-switch:active { transform: scale(.96); background: rgba(201, 162, 75, .25); }
+.dhikr-switch svg { width: 15px; height: 15px; }
+
+/* target chips */
+.targets { display: flex; justify-content: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.chip {
+    font-family: 'Tajawal', sans-serif;
+    font-size: 13.5px; font-weight: 500; color: var(--cream-dim);
+    background: rgba(16, 43, 51, .55);
+    border: 1px solid rgba(201, 162, 75, .18);
+    padding: 6px 15px; border-radius: 999px;
+    cursor: pointer; transition: all .15s;
+    font-variant-numeric: tabular-nums;
+}
+.chip.active {
+    color: #1b1405;
+    background: linear-gradient(135deg, var(--gold-hi), var(--gold));
+    border-color: var(--gold); font-weight: 700;
+    box-shadow: 0 3px 14px rgba(201, 162, 75, .30);
+}
+
+/* the counter */
+.counter-wrap { display: flex; align-items: center; justify-content: center; margin: 14px 0 10px; flex: 1; }
+.counter {
+    position: relative;
+    width: min(68vw, 290px); aspect-ratio: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+.ring-bg, .ring-fg { position: absolute; inset: 0; transform: rotate(-90deg); transform-origin: 50% 50%; }
+.ring-bg circle { fill: none; stroke: rgba(201, 162, 75, .14); stroke-width: 7; }
+.ring-fg circle {
+    fill: none; stroke: url(#goldgrad); stroke-width: 7; stroke-linecap: round;
+    transition: stroke-dashoffset .18s ease-out;
+    filter: drop-shadow(0 0 6px rgba(201, 162, 75, .55));
+}
+.pad {
+    position: absolute; inset: 9.5%; border-radius: 50%;
+    background: radial-gradient(circle at 34% 28%, #17414d 0%, var(--bg-card) 52%, #0a2028 100%);
+    border: 1px solid rgba(201, 162, 75, .22);
+    box-shadow: 0 18px 45px rgba(0, 0, 0, .5), inset 0 2px 14px rgba(240, 215, 140, .06), inset 0 -10px 26px rgba(0, 0, 0, .35);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    transition: transform .07s ease;
+}
+.counter.pressed .pad { transform: scale(.965); }
+.count {
+    font-family: 'Tajawal', sans-serif;
+    font-weight: 800; font-variant-numeric: tabular-nums;
+    font-size: clamp(48px, 17vw, 76px); line-height: 1;
+    color: var(--gold-hi);
+    text-shadow: 0 0 26px rgba(201, 162, 75, .35);
+}
+.pad .hint { font-size: 13px; color: var(--cream-dim); margin-top: 4px; }
+.pad .rounds { font-size: 13.5px; color: var(--gold); font-weight: 500; min-height: 18px; font-variant-numeric: tabular-nums; }
+.counter.complete .pad { animation: glow .9s ease; }
+@keyframes glow {
+    0% { box-shadow: 0 18px 45px rgba(0, 0, 0, .5), 0 0 0 rgba(240, 215, 140, 0); }
+    35% { box-shadow: 0 18px 45px rgba(0, 0, 0, .5), 0 0 60px rgba(240, 215, 140, .55); }
+    100% { box-shadow: 0 18px 45px rgba(0, 0, 0, .5), 0 0 0 rgba(240, 215, 140, 0); }
+}
+.blessing {
+    position: absolute; top: -34px; left: 50%;
+    transform: translateX(-50%) translateY(6px);
+    font-family: 'Amiri', serif; font-size: 21px; color: var(--gold-hi);
+    opacity: 0; pointer-events: none; white-space: nowrap;
+    transition: opacity .35s, transform .35s;
+}
+.blessing.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* bottom controls */
+.controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 2px; }
+.stats { display: flex; gap: 16px; justify-content: center; margin-top: 4px; padding-bottom: 2px; }
+.stat { text-align: center; }
+.stat b { display: block; font-size: 19px; font-weight: 800; color: var(--cream); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 11.5px; color: var(--cream-dim); }
+.btn-label { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: var(--cream-dim); }
+.reset-hold { position: relative; overflow: hidden; }
+.reset-hold .fill {
+    position: absolute; inset: 0;
+    background: rgba(220, 80, 70, .35);
+    transform: scaleX(0); transform-origin: right;
+    pointer-events: none;
+}
+.save-note {
+    text-align: center;
+    font-size: 10.5px;
+    color: rgba(243, 234, 211, .35);
+    padding-top: 4px;
+    min-height: 13px;
+}
+
+/* dhikr sheet */
+.sheet-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(3, 10, 13, .6);
+    backdrop-filter: blur(3px);
+    opacity: 0; pointer-events: none;
+    transition: opacity .25s;
+    z-index: 20;
+}
+.sheet {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 21;
+    background: linear-gradient(180deg, #12313a, #0b2129);
+    border-radius: 22px 22px 0 0;
+    border-top: 1px solid rgba(201, 162, 75, .3);
+    padding: 14px 18px calc(18px + var(--safe-bottom));
+    transform: translateY(105%);
+    transition: transform .3s cubic-bezier(.2, .8, .25, 1);
+    max-height: 62%; display: flex; flex-direction: column;
+}
+.misbaha.sheet-open .sheet { transform: translateY(0); }
+.misbaha.sheet-open .sheet-backdrop { opacity: 1; pointer-events: auto; }
+.sheet h2 {
+    margin: 0 0 10px;
+    font-family: 'Amiri', serif; font-size: 20px; color: var(--gold-hi); text-align: center;
+}
+.dhikr-list { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.dhikr-item {
+    font-family: 'Amiri', serif;
+    font-size: 21px; line-height: 1.7; color: var(--cream);
+    background: rgba(16, 43, 51, .55);
+    border: 1px solid rgba(201, 162, 75, .16);
+    border-radius: 14px; padding: 10px 14px;
+    text-align: center; cursor: pointer;
+    transition: border-color .15s;
+}
+.dhikr-item:active, .dhikr-item.sel { border-color: var(--gold); background: rgba(29, 74, 84, .6); }
+</style>
+</head>
+<body>
+<div dir="rtl" lang="ar" class="misbaha" id="root">
+    <div class="app">
+        <header>
+            <div class="brand"><div class="dot"></div><h1>مِسْبَحَة</h1></div>
+            <div style="display:flex;gap:8px">
+                <button class="icon-btn" id="btn-share" aria-label="مشاركة">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" /><path d="M12 3v13" /><path d="m7 8 5-5 5 5" /></svg>
+                </button>
+                <button class="icon-btn on" id="btn-vib" aria-label="الاهتزاز">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="20" rx="2" /><path d="M4 8v8" /><path d="M20 8v8" /></svg>
+                </button>
+                <button class="icon-btn" id="btn-snd" aria-label="الصوت">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="dhikr-zone">
+            <div class="dhikr-text" id="dhikr-text"></div>
+            <button class="dhikr-switch" id="btn-dhikr">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7" /></svg>
+                تغيير الذِّكر
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+            </button>
+        </div>
+
+        <div class="targets" id="targets"></div>
+
+        <div class="counter-wrap">
+            <div class="counter" id="counter" role="button" aria-label="عدّ" tabindex="0">
+                <div class="blessing" id="blessing">تَقَبَّلَ اللَّهُ ✦</div>
+                <svg width="100%" height="100%" viewBox="0 0 100 100">
+                    <defs>
+                        <linearGradient id="goldgrad" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0%" stop-color="#f0d78c" />
+                            <stop offset="55%" stop-color="#c9a24b" />
+                            <stop offset="100%" stop-color="#9a7a2e" />
+                        </linearGradient>
+                    </defs>
+                    <g class="ring-bg"><circle cx="50" cy="50" r="47.5" /></g>
+                    <g class="ring-fg"><circle id="ring-fg-circle" cx="50" cy="50" r="47.5"
+                        stroke-dasharray="298.45" stroke-dashoffset="298.45" /></g>
+                </svg>
+                <div class="pad">
+                    <div class="rounds" id="rounds"></div>
+                    <div class="count" id="count">0</div>
+                    <div class="hint">المس للعدّ</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="btn-label">
+                <button class="icon-btn" id="btn-minus" aria-label="إنقاص">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14" /></svg>
+                </button>تراجع
+            </div>
+            <div class="stats">
+                <div class="stat"><b id="stat-day">1</b><span>اليوم</span></div>
+                <div class="stat"><b id="stat-total">0</b><span>المجموع</span></div>
+            </div>
+            <div class="btn-label">
+                <button class="icon-btn reset-hold" id="btn-reset" aria-label="تصفير">
+                    <span class="fill" id="reset-fill"></span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5" /></svg>
+                </button>تصفير (اضغط مطوّلًا)
+            </div>
+        </div>
+        <div class="save-note" id="save-note"></div>
+    </div>
+
+    <div class="sheet-backdrop" id="sheet-backdrop"></div>
+    <div class="sheet" role="dialog" aria-label="اختر الذكر">
+        <h2>اختر الذِّكر</h2>
+        <div class="dhikr-list" role="listbox" id="dhikr-list"></div>
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    var ADHKAR = [
+        'أَسْتَغْفِرُ اللَّهَ',
+        'أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ الَّذِي لَا إِلَٰهَ إِلَّا هُوَ الْحَيَّ الْقَيُّومَ وَأَتُوبُ إِلَيْهِ',
+        'سُبْحَانَ اللَّهِ',
+        'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ',
+        'سُبْحَانَ اللَّهِ الْعَظِيمِ وَبِحَمْدِهِ',
+        'الْحَمْدُ لِلَّهِ',
+        'اللَّهُ أَكْبَرُ',
+        'لَا إِلَٰهَ إِلَّا اللَّهُ',
+        'اللَّهُمَّ صَلِّ عَلَىٰ مُحَمَّدٍ',
+        'لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ'
+    ];
+    var TARGETS = [33, 100, 1000, 0];
+    var CIRC = 298.45;
+    var KEY = 'misbaha.v1';
+
+    var initialCounter = { count: 0, target: 100, round: 1, total: 0, today: 0, day: '', dayNum: 0, dhikr: 0, vib: true, snd: false };
+    var state = null; // null until storage answered
+    var ready = false;
+
+    // ---- Telegram Mini App wiring ----
+    var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+    var inTelegram = !!(tg && tg.initData);
+    var hasCloud = false;
+    if (tg) {
+        try {
+            tg.ready();
+            tg.expand();
+            if (tg.setHeaderColor) tg.setHeaderColor('#081820');
+            if (tg.setBackgroundColor) tg.setBackgroundColor('#081820');
+            if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+            hasCloud = !!(tg.CloudStorage && tg.CloudStorage.getItem);
+        } catch (e) { hasCloud = false; }
+    }
+
+    // ---- persistence: Telegram CloudStorage with localStorage fallback ----
+    function loadStored(cb) {
+        var local = null;
+        try { local = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+        if (hasCloud) {
+            var done = false;
+            var timer = setTimeout(function () { if (!done) { done = true; cb(local); } }, 2500);
+            try {
+                tg.CloudStorage.getItem(KEY, function (err, val) {
+                    if (done) return;
+                    done = true;
+                    clearTimeout(timer);
+                    if (!err && val) {
+                        try { cb(JSON.parse(val)); return; } catch (e) {}
+                    }
+                    cb(local);
+                });
+            } catch (e) { if (!done) { done = true; clearTimeout(timer); cb(local); } }
+        } else {
+            cb(local);
+        }
+    }
+    function persist() {
+        var str;
+        try { str = JSON.stringify(state); } catch (e) { return; }
+        try { localStorage.setItem(KEY, str); } catch (e) {}
+        if (hasCloud) {
+            try { tg.CloudStorage.setItem(KEY, str, function () {}); } catch (e) {}
+        }
+    }
+
+    // ---- haptics: Telegram HapticFeedback, navigator.vibrate outside ----
+    function buzz(kind) {
+        if (!state || !state.vib) return;
+        if (tg && tg.HapticFeedback) {
+            try {
+                if (kind === 'success') { tg.HapticFeedback.notificationOccurred('success'); return; }
+                if (kind === 'warn') { tg.HapticFeedback.notificationOccurred('warning'); return; }
+                tg.HapticFeedback.impactOccurred('light');
+                return;
+            } catch (e) {}
+        }
+        try {
+            if (navigator.vibrate) navigator.vibrate(kind === 'success' ? [70, 60, 130] : kind === 'warn' ? [50, 40, 50] : 12);
+        } catch (e) {}
+    }
+
+    // ---- sound (optional, off by default) ----
+    var audioCtx = null;
+    function clickSound() {
+        if (!state.snd) return;
+        try {
+            audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+            var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+            o.type = 'sine'; o.frequency.value = 1180;
+            g.gain.setValueAtTime(0.06, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.07);
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(); o.stop(audioCtx.currentTime + 0.08);
+        } catch (e) {}
+    }
+
+    // ---- day rollover: اليوم is the day NUMBER of use ----
+    function rebaseToToday(s) {
+        var k = new Date().toDateString();
+        if (s.day === k) return s;
+        var dayNum = s.day === '' ? Math.max(1, s.dayNum || 0) : (s.dayNum || 1) + 1;
+        var n = Object.assign({}, s);
+        n.day = k; n.dayNum = dayNum;
+        return n;
+    }
+
+    // ---- DOM ----
+    var $ = function (id) { return document.getElementById(id); };
+    var rootEl = $('root'), counterEl = $('counter'), countEl = $('count'), roundsEl = $('rounds'),
+        ringEl = $('ring-fg-circle'), blessingEl = $('blessing'), dhikrTextEl = $('dhikr-text'),
+        statDayEl = $('stat-day'), statTotalEl = $('stat-total'), saveNoteEl = $('save-note'),
+        resetFillEl = $('reset-fill');
+
+    function render() {
+        if (!state) return;
+        var progress = state.target > 0 ? Math.min(state.count / state.target, 1) : 0;
+        ringEl.setAttribute('stroke-dashoffset', String(CIRC * (1 - progress)));
+        countEl.textContent = String(state.count);
+        roundsEl.textContent = state.target > 0 ? ('الجولة ' + state.round + ' · الهدف ' + state.target) : 'ذِكرٌ بلا عدد';
+        var dhikr = ADHKAR[state.dhikr] || ADHKAR[0];
+        dhikrTextEl.textContent = dhikr;
+        dhikrTextEl.style.fontSize = dhikr.length > 45 ? '21px' : '28px';
+        statDayEl.textContent = String(state.dayNum > 0 ? state.dayNum : 1);
+        statTotalEl.textContent = String(state.total);
+        $('btn-vib').className = 'icon-btn' + (state.vib ? ' on' : '');
+        $('btn-snd').className = 'icon-btn' + (state.snd ? ' on' : '');
+        var chips = $('targets').children;
+        for (var i = 0; i < chips.length; i++) {
+            chips[i].className = 'chip' + (TARGETS[i] === state.target ? ' active' : '');
+        }
+        var items = $('dhikr-list').children;
+        for (var j = 0; j < items.length; j++) {
+            items[j].className = 'dhikr-item' + (j === state.dhikr ? ' sel' : '');
+        }
+        saveNoteEl.textContent = hasCloud ? 'يُحفَظ تلقائيًا على حسابك في تيليجرام' : 'يُحفَظ تلقائيًا على هذا الجهاز';
+    }
+
+    function setState(next) {
+        state = next;
+        persist();
+        render();
+    }
+    function update(patch) {
+        if (!ready) return;
+        setState(Object.assign(rebaseToToday(state), patch));
+    }
+
+    // ---- interactions ----
+    var lastTap = 0, pressTimer = null;
+    function tap() {
+        if (!ready) return;
+        var now = performance.now();
+        if (now - lastTap < 45) return;
+        lastTap = now;
+        var base = rebaseToToday(state);
+        var next = base.count + 1;
+        counterEl.classList.add('pressed');
+        setTimeout(function () { counterEl.classList.remove('pressed'); }, 80);
+        if (base.target > 0 && next >= base.target) {
+            setState(Object.assign(base, { count: 0, round: base.round + 1, total: base.total + 1, today: base.today + 1 }));
+            buzz('success');
+            blessingEl.textContent = 'تَقَبَّلَ اللَّهُ ✦';
+            blessingEl.classList.add('show');
+            counterEl.classList.add('complete');
+            setTimeout(function () { blessingEl.classList.remove('show'); counterEl.classList.remove('complete'); }, 1400);
+        } else {
+            setState(Object.assign(base, { count: next, total: base.total + 1, today: base.today + 1 }));
+            buzz('tap');
+        }
+        clickSound();
+    }
+    counterEl.addEventListener('pointerdown', function (e) { e.preventDefault(); tap(); });
+
+    $('btn-minus').addEventListener('click', function () {
+        if (!ready || state.count <= 0) return;
+        update({ count: state.count - 1, total: Math.max(0, state.total - 1), today: Math.max(0, state.today - 1) });
+        buzz('tap');
+    });
+
+    // long-press reset
+    var holdTimer = null;
+    function startHold(e) {
+        e.preventDefault();
+        var started = performance.now();
+        if (holdTimer) clearInterval(holdTimer);
+        holdTimer = setInterval(function () {
+            var p = Math.min((performance.now() - started) / 900, 1);
+            resetFillEl.style.transform = 'scaleX(' + p + ')';
+            if (p >= 1) {
+                clearInterval(holdTimer); holdTimer = null;
+                resetFillEl.style.transform = 'scaleX(0)';
+                update({ count: 0, round: 1 });
+                buzz('warn');
+            }
+        }, 30);
+    }
+    function endHold() {
+        if (holdTimer) { clearInterval(holdTimer); holdTimer = null; }
+        resetFillEl.style.transform = 'scaleX(0)';
+    }
+    var resetBtn = $('btn-reset');
+    resetBtn.addEventListener('pointerdown', startHold);
+    resetBtn.addEventListener('pointerup', endHold);
+    resetBtn.addEventListener('pointerleave', endHold);
+    resetBtn.addEventListener('pointercancel', endHold);
+
+    // share
+    $('btn-share').addEventListener('click', function () {
+        var data = { title: 'مِسْبَحَة', text: 'مسبحة إلكترونية لعدّ الاستغفار والأذكار:', url: location.href };
+        if (navigator.share) {
+            navigator.share(data).catch(function () {});
+        } else if (navigator.clipboard) {
+            navigator.clipboard.writeText(location.href).then(function () {
+                blessingEl.textContent = 'نُسِخَ الرابط';
+                blessingEl.classList.add('show');
+                setTimeout(function () { blessingEl.classList.remove('show'); }, 1300);
+            }).catch(function () {});
+        }
+    });
+
+    // toggles
+    $('btn-vib').addEventListener('click', function () {
+        update({ vib: !state.vib });
+        if (!state.vib) { try { if (navigator.vibrate) navigator.vibrate(20); } catch (e) {} }
+    });
+    $('btn-snd').addEventListener('click', function () { update({ snd: !state.snd }); });
+
+    // target chips
+    TARGETS.forEach(function (t) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip';
+        b.textContent = t === 0 ? 'بلا هدف' : String(t);
+        b.addEventListener('click', function () { update({ target: t, count: 0, round: 1 }); buzz('tap'); });
+        $('targets').appendChild(b);
+    });
+
+    // dhikr sheet
+    ADHKAR.forEach(function (d, i) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'dhikr-item';
+        b.textContent = d;
+        b.addEventListener('click', function () {
+            update({ dhikr: i, count: 0, round: 1 });
+            rootEl.classList.remove('sheet-open');
+            buzz('tap');
+        });
+        $('dhikr-list').appendChild(b);
+    });
+    $('btn-dhikr').addEventListener('click', function () { rootEl.classList.add('sheet-open'); });
+    $('sheet-backdrop').addEventListener('click', function () { rootEl.classList.remove('sheet-open'); });
+
+    // day rollover while open / on return
+    function rebaseNow() {
+        if (!ready) return;
+        var r = rebaseToToday(state);
+        if (r !== state) setState(r);
+    }
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') rebaseNow(); });
+    window.addEventListener('focus', rebaseNow);
+    setInterval(rebaseNow, 30000);
+
+    // keep screen awake while counting (best effort)
+    var wakeLock = null;
+    function reqWake() {
+        if (!wakeLock && navigator.wakeLock) {
+            navigator.wakeLock.request('screen').then(function (w) { wakeLock = w; }).catch(function () {});
+        }
+    }
+    document.addEventListener('pointerdown', reqWake);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') reqWake(); });
+
+    // ---- boot ----
+    loadStored(function (stored) {
+        state = rebaseToToday(Object.assign({}, initialCounter, stored || {}));
+        ready = true;
+        persist();
+        render();
+    });
+})();
+</script>
+</body>
+</html>
