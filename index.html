@@ -333,7 +333,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
     var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
     var inTelegram = !!(tg && tg.initData);
     var hasCloud = false;
-    if (tg) {
+    if (tg && inTelegram) {
         try {
             tg.ready();
             tg.expand();
@@ -342,6 +342,8 @@ header { display: flex; align-items: center; justify-content: space-between; gap
             if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
             hasCloud = !!(tg.CloudStorage && tg.CloudStorage.getItem);
         } catch (e) { hasCloud = false; }
+    } else if (tg) {
+        try { tg.ready(); tg.expand(); } catch (e) {}
     }
 
     // ---- persistence: Telegram CloudStorage with localStorage fallback ----
