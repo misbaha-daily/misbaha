@@ -32,17 +32,18 @@ hr { border: none; border-top: 1px solid rgba(201,162,75,.3); margin: 30px 0; }
 <ul>
 <li>عددك، وسجلّك، وهدفك، وذِكرك المختار، وإعدادات الصوت والاهتزاز والمظهر واللغة: كلها تُحفَظ في متصفحك على جهازك فقط (localStorage) ولا تُرسَل إلى أي خادم.</li>
 <li>إذا فتحت المسبحة من داخل تيليجرام، يُحفَظ العدد أيضًا في مساحة تيليجرام السحابية الخاصة بحسابك حتى يتزامن داخل تيليجرام، ولا نطّلع عليه.</li>
-<li>التذكيرات داخل تيليجرام اختيارية: وقت التذكير والذِّكر المختار يُحفَظان على خادمنا ليصلك التذكير، ويمكنك حذفها في أي وقت من صفحة التذكيرات.</li>
+<li>التذكيرات داخل تيليجرام اختيارية: ليصلك التذكير يُحفَظ على خادمنا معرّف حسابك في تيليجرام (رقم فقط، بلا اسم) ووقت التذكير واسم منطقتك الزمنية والذِّكر المختار، ويمكنك حذفها في أي وقت من صفحة التذكيرات.</li>
 </ul>
 
 <h2>عدّاد الزيارات المجهول</h2>
-<p>نحسب عدد مرات فتح الموقع وعدد الأجهزة تقريبًا لنعرف إن كان الموقع يُستخدَم. يعتمد ذلك على رقم عشوائي يولَّد على جهازك، بلا اسم وبلا عنوان IP محفوظ وبلا موقع وبلا أي بيانات شخصية.</p>
+<p>نحسب عدد مرات فتح الموقع وعدد الأجهزة تقريبًا لنعرف إن كان الموقع يُستخدَم. يعتمد ذلك على رقم عشوائي يولَّد على جهازك ويبقى في متصفحك، ولا يصل خادمنا إلا بصمته المشفَّرة (SHA-256) ليُحسَب كل جهاز مرة واحدة. لا يُحفَظ اسم ولا عنوان IP ولا موقع ولا أي بيانات شخصية.</p>
 
 <h2>حذف بياناتك</h2>
 <p>لأن بياناتك على جهازك، يمكنك حذفها في أي وقت بمسح بيانات الموقع من إعدادات المتصفح، ويختفي كل شيء نهائيًا.</p>
 
-<h2>الروابط الخارجية</h2>
+<h2>الروابط والطلبات الخارجية</h2>
 <p>أزرار المشاركة (واتساب وفيسبوك) تفتح مواقعهما فقط إذا ضغطت عليها أنت. لا يُرسَل أي شيء نيابة عنك تلقائيًا.</p>
+<p>الموقع لا يحمّل أي ملفات من خوادم خارجية ولا يتصل إلا بخادمنا لعدّ الزيارات المجهول. وعند فتح المسبحة من داخل تيليجرام فقط، يُحمَّل ملف جافاسكربت من خوادم تيليجرام لتعمل ميزات التطبيق المصغّر والتذكيرات.</p>
 </section>
 
 <hr>
@@ -55,17 +56,18 @@ hr { border: none; border-top: 1px solid rgba(201,162,75,.3); margin: 30px 0; }
 <ul>
 <li>Your count, history, goal, chosen dhikr, and your sound, vibration, theme and language settings are kept in your browser on your device only (localStorage). They are never sent to any server.</li>
 <li>If you open the counter inside Telegram, the count is also kept in your own Telegram cloud storage so it stays in sync there; we cannot see it.</li>
-<li>Telegram reminders are optional: the reminder time and chosen dhikr are stored on our server so the reminder can reach you, and you can delete them anytime from the reminders page.</li>
+<li>Telegram reminders are optional: to deliver your reminder, our server stores your Telegram account ID (a number only, no name), the reminder time, your timezone name, and the chosen dhikr. You can delete them anytime from the reminders page.</li>
 </ul>
 
 <h2>Anonymous visit counter</h2>
-<p>We count how many times the site is opened and roughly how many devices use it, so we know the site is being used. This relies on a random number generated on your device - no name, no stored IP address, no location, no personal data of any kind.</p>
+<p>We count how many times the site is opened and roughly how many devices use it, so we know the site is being used. This relies on a random number generated and kept on your device; only its cryptographic hash (SHA-256) reaches our server, so each device is counted once. No name, no stored IP address, no location, no personal data of any kind.</p>
 
 <h2>Deleting your data</h2>
 <p>Because your data lives on your device, you can delete it anytime by clearing this site's data in your browser settings. It is then gone for good.</p>
 
-<h2>External links</h2>
+<h2>External links and requests</h2>
 <p>The share buttons (WhatsApp, Facebook) open their sites only if you tap them yourself. Nothing is sent on your behalf automatically.</p>
+<p>The site loads no files from third-party servers and contacts only our own server for the anonymous visit count. Only when you open the counter inside Telegram is one script loaded from Telegram's servers so the mini-app and reminder features can work.</p>
 </section>
 
 </main>
