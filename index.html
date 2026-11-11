@@ -458,20 +458,46 @@ button:disabled {opacity:.5;cursor:wait}
     var soundChoice = null;
     try { soundChoice = localStorage.getItem('misbaha.sound.v1'); } catch (e) {}
     if (!soundSources[soundChoice] && soundChoice !== 'off') soundChoice = null;
-    var tapAudio = new Audio();
-    tapAudio.preload = 'auto';
-    tapAudio.setAttribute('playsinline', '');
-    function setTone(key) {
-        tapAudio.pause();
-        if (soundSources[key]) tapAudio.src = soundSources[key];
+    var POOL = 4, pool = [], poolIdx = 0, poolSrc = null, unlocked = false;
+    for (var pi = 0; pi < POOL; pi++) {
+        var pa = new Audio();
+        pa.preload = 'auto';
+        pa.setAttribute('playsinline', '');
+        pool.push(pa);
     }
+    function setTone(key) {
+        poolSrc = soundSources[key] || null;
+        pool.forEach(function (a) {
+            try { a.pause(); } catch (e) {}
+            if (poolSrc) { a.src = poolSrc; try { a.load(); } catch (e) {} }
+        });
+    }
+    // Warm every pooled element inside a real gesture so later plays start instantly.
+    function unlockPool() {
+        if (unlocked || !poolSrc) return;
+        unlocked = true;
+        pool.forEach(function (a) {
+            if (!a.paused) return;
+            try {
+                a.muted = true;
+                var p = a.play();
+                var done = function () { try { a.pause(); a.currentTime = 0; } catch (e) {} a.muted = false; };
+                if (p && p.then) p.then(done, function () { a.muted = false; unlocked = false; }); else done();
+            } catch (e) { a.muted = false; unlocked = false; }
+        });
+    }
+    // Returns true when playback was started for this call.
+    var soundBlocked = false;
     function clickSound() {
-        if (!state || !state.snd || soundChoice === 'off') return;
+        if (!state || !state.snd || soundChoice === 'off' || !poolSrc) return false;
         try {
-            tapAudio.currentTime = 0;
-            var playing = tapAudio.play();
-            if (playing && playing.catch) playing.catch(function () {});
-        } catch (e) {}
+            var a = pool[poolIdx]; poolIdx = (poolIdx + 1) % POOL;
+            a.muted = false;
+            try { a.currentTime = 0; } catch (e) {}
+            var playing = a.play();
+            if (playing && playing.catch) playing.catch(function () { soundBlocked = true; });
+            return true;
+        } catch (e) { soundBlocked = true; return false; }
     }
 
     // ---- day rollover: اليوم is the day NUMBER of use ----
@@ -549,10 +575,21 @@ button:disabled {opacity:.5;cursor:wait}
             buzz('tap');
         }
     }
-    counterEl.addEventListener('pointerdown', function (e) { e.preventDefault(); tap(); });
-    var lastSoundTouch = 0;
-    counterEl.addEventListener('touchend', function () { lastSoundTouch = Date.now(); clickSound(); }, { passive: true });
-    counterEl.addEventListener('click', function () { if (Date.now() - lastSoundTouch > 500) clickSound(); });
+    // Sound fires on pointerdown, together with the count. Only if the browser refuses
+    // playback outside a "finished" gesture (soundBlocked) does touchend/click take over.
+    var soundDoneForTap = false;
+    counterEl.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        soundDoneForTap = false;
+        if (!soundBlocked) soundDoneForTap = clickSound();
+        tap();
+    });
+    counterEl.addEventListener('touchend', function () {
+        unlockPool();
+        if (!soundDoneForTap || soundBlocked) { soundBlocked = false; clickSound(); }
+        soundDoneForTap = true;
+    }, { passive: true });
+    counterEl.addEventListener('click', function () { unlockPool(); });
 
     $('btn-minus').addEventListener('click', function () {
         if (!ready || state.count <= 0) return;
@@ -616,8 +653,10 @@ button:disabled {opacity:.5;cursor:wait}
             soundChoice = b.getAttribute('data-sound');
             try { localStorage.setItem('misbaha.sound.v1', soundChoice); } catch (e) {}
             setTone(soundChoice);
+            unlocked = false;
             update({ snd: soundChoice !== 'off' });
             if (state.snd) clickSound();
+            setTimeout(unlockPool, 400);
         });
     });
 
