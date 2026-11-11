@@ -1,5 +1,5 @@
-// Misbaha service worker: fast loads + offline after the first visit.
-// Network-first for pages (never serve a stale app), cache-first for static assets.
+// Misbaha service worker: network-first for everything (never serve a stale app),
+// cache is the offline fallback. Nothing off-origin is cached.
 var VERSION = 'misbaha-v2.0.1';
 var STATIC_CACHE = VERSION + '-static';
 var STATIC = [
