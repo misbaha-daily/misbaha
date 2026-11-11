@@ -331,7 +331,8 @@ button:disabled {opacity:.5;cursor:wait}
     <div class="reminder-backdrop" id="reminder-backdrop"></div>
     <section class="reminder-sheet" id="reminder-sheet" role="dialog" aria-modal="true" aria-labelledby="reminder-heading" aria-hidden="true">
       <div class="reminder-title"><h2 id="reminder-heading">تذكيرٌ بالذِّكر</h2><button type="button" class="icon-btn" id="reminder-close" aria-label="إغلاق">✕</button></div>
-      <p>اختر وقتك وذِكرك، وتصلك رسالة يومية من البوت.</p>
+      
+      <p>اختر وقتك وذكرك</p>
       <p id="reminder-status" role="status" aria-live="polite"></p>
       <div id="reminder-list"></div>
       <form id="reminder-form">
@@ -339,7 +340,7 @@ button:disabled {opacity:.5;cursor:wait}
         <label for="reminder-dhikr">الذِّكر</label><select id="reminder-dhikr"></select>
         <button class="dhikr-switch reminder-submit" id="reminder-save" type="submit">إضافة تذكير يومي</button>
       </form>
-      <p>حتى 5 تذكيرات. تصلك الرسائل والتطبيق مغلق، ما دام البوت غير محظور. ظهور الإشعار يعتمد على إعدادات تيليجرام وجهازك. قد يتأخر الإرسال قليلًا.</p>
+
     </section>
 </div>
 
@@ -632,6 +633,6 @@ button:disabled {opacity:.5;cursor:wait}
     });
 })();
 </script>
-<script src="./reminders.js?v=1"></script>
+<script src="./reminders.js?v=2"></script>
 </body>
 </html>
