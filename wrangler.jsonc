@@ -3,6 +3,32 @@
   "main": "worker.mjs",
   "compatibility_date": "2026-08-06",
   "workers_dev": true,
-  "triggers": { "crons": ["* * * * *"] },
-  "d1_databases": [{"binding":"DB","database_name":"misbaha-reminders","database_id":"c3223881-e8e8-4655-97fd-2330c7730e92"}]
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "misbaha-reminders",
+      "database_id": "c3223881-e8e8-4655-97fd-2330c7730e92"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CLOCK",
+        "class_name": "ReminderClock"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "clock-v1",
+      "new_sqlite_classes": [
+        "ReminderClock"
+      ]
+    }
+  ]
 }
