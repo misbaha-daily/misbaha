@@ -1050,6 +1050,7 @@ body.theme-light { background: #f4ecd7; }
             try { if (tg.setHeaderColor) tg.setHeaderColor(bg); if (tg.setBackgroundColor) tg.setBackgroundColor(bg); } catch (e) {}
         }
         $('btn-theme').setAttribute('aria-pressed', String(t === 'light'));
+        var ts = $('theme-state'); if (ts) ts.textContent = t === 'light' ? T('light') : T('dark');
     }
     applyTheme(theme);
     $('btn-theme').addEventListener('click', function () {
@@ -1472,4 +1473,4 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
 }
 </script>
 </body>
-</html>
+    </html>
