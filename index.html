@@ -98,7 +98,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .icon-btn svg { width: 20px; height: 20px; }
 
 /* dhikr card */
-.dhikr-zone { margin-top: 8px; text-align: center; min-height: 72px; display: flex; flex-direction: column; justify-content: center; }
+.dhikr-zone { margin-top: 22px; text-align: center; min-height: 72px; display: flex; flex-direction: column; justify-content: center; }
 .dhikr-text {
     font-family: 'Amiri', serif;
     font-size: 28px; line-height: 1.5;
@@ -122,13 +122,13 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .dhikr-switch svg { width: 15px; height: 15px; }
 
 /* target chips */
-.targets { display: flex; justify-content: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.targets { display: flex; justify-content: center; gap: 9px; margin-top: 12px; flex-wrap: wrap; }
 .chip {
     font-family: 'Tajawal', sans-serif;
-    font-size: 13.5px; font-weight: 500; color: var(--cream-dim);
+    font-size: 15px; font-weight: 500; color: var(--cream-dim);
     background: var(--btn-bg-soft);
     border: 1px solid rgba(201, 162, 75, .18);
-    padding: 6px 15px; border-radius: 999px;
+    padding: 7px 17px; border-radius: 999px;
     cursor: pointer; transition: all .15s;
     font-variant-numeric: tabular-nums;
 }
@@ -143,7 +143,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .counter-wrap { display: flex; align-items: center; justify-content: center; margin: 14px 0 10px; flex: 1; }
 .counter {
     position: relative;
-    width: min(68vw, 290px); aspect-ratio: 1;
+    width: min(74vw, 40vh, 306px); aspect-ratio: 1;
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     -webkit-tap-highlight-color: transparent;
@@ -168,12 +168,12 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .count {
     font-family: 'Tajawal', sans-serif;
     font-weight: 800; font-variant-numeric: tabular-nums;
-    font-size: clamp(48px, 17vw, 76px); line-height: 1;
+    font-size: clamp(56px, 19.5vw, 90px); line-height: 1;
     color: var(--gold-hi);
     text-shadow: 0 0 26px rgba(201, 162, 75, .35);
 }
-.pad .hint { font-size: 13px; color: var(--cream-dim); margin-top: 4px; }
-.pad .rounds { font-size: 13.5px; color: var(--gold); font-weight: 500; min-height: 18px; font-variant-numeric: tabular-nums; }
+.pad .hint { font-size: 14px; color: var(--cream-dim); margin-top: 4px; }
+.pad .rounds { font-size: 15px; color: var(--gold); font-weight: 500; min-height: 18px; font-variant-numeric: tabular-nums; }
 .counter.complete .pad { animation: glow .9s ease; }
 @keyframes glow {
     0% { box-shadow: 0 18px 45px rgba(0, 0, 0, .5), 0 0 0 rgba(240, 215, 140, 0); }
@@ -190,7 +190,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .blessing.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* bottom controls */
-.controls { display: flex; align-items: flex-start; justify-content: center; gap: 48px; margin-top: 2px; }
+.controls { display: flex; align-items: flex-start; justify-content: center; gap: 48px; margin-top: 2px; margin-bottom: 16px; }
 .stats { display: flex; gap: 16px; justify-content: center; margin-top: 4px; padding-bottom: 2px; }
 .stat { text-align: center; }
 .stat b { display: block; font-size: 19px; font-weight: 800; color: var(--cream); font-variant-numeric: tabular-nums; }
@@ -1053,7 +1053,7 @@ body.theme-light { background: #f4ecd7; }
         var b = document.createElement('button');
         b.type = 'button';
         b.className = 'chip';
-        b.textContent = t === 0 ? 'بلا هدف' : String(t);
+        b.textContent = t === 0 ? 'بلا عدد' : String(t);
         b.addEventListener('click', function () { if (ready && state.count > 0) logSession(state.dhikr, state.count); update({ target: t, count: 0, round: 1 }); buzz('tap'); });
         $('targets').appendChild(b);
     });
