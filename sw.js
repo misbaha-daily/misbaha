@@ -1,6 +1,6 @@
 // Misbaha service worker: fast loads + offline after the first visit.
 // Network-first for pages (never serve a stale app), cache-first for static assets.
-var VERSION = 'misbaha-v2.0.0';
+var VERSION = 'misbaha-v2.0.1';
 var STATIC_CACHE = VERSION + '-static';
 var STATIC = [
   './',
@@ -44,28 +44,21 @@ self.addEventListener('activate', function (e) {
 self.addEventListener('fetch', function (e) {
   var url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
-  // Never cache the anonymous visit ping or anything off-origin.
-  if (e.request.mode === 'navigate') {
-    e.respondWith(
-      fetch(e.request).then(function (res) {
+  // Network-first for everything same-origin: users always get the freshest files
+  // when online; the cache is the offline fallback. Nothing off-origin is cached
+  // (the anonymous visit ping and Telegram's script pass straight through).
+  e.respondWith(
+    fetch(e.request).then(function (res) {
+      if (res && res.ok) {
         var copy = res.clone();
         caches.open(STATIC_CACHE).then(function (c) { c.put(e.request, copy); });
-        return res;
-      }).catch(function () {
-        return caches.match(e.request).then(function (hit) { return hit || caches.match('./index.html'); });
-      })
-    );
-    return;
-  }
-  e.respondWith(
-    caches.match(e.request).then(function (hit) {
-      if (hit) return hit;
-      return fetch(e.request).then(function (res) {
-        if (res && res.ok) {
-          var copy = res.clone();
-          caches.open(STATIC_CACHE).then(function (c) { c.put(e.request, copy); });
-        }
-        return res;
+      }
+      return res;
+    }).catch(function () {
+      return caches.match(e.request).then(function (hit) {
+        if (hit) return hit;
+        if (e.request.mode === 'navigate') return caches.match('./index.html');
+        return Response.error();
       });
     })
   );
