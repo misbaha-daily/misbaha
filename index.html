@@ -121,6 +121,22 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .dhikr-switch:active { transform: scale(.96); background: rgba(201, 162, 75, .25); }
 .dhikr-switch svg { width: 15px; height: 15px; }
 
+/* open-in-telegram: gold pill, visible only outside Telegram */
+.tg-open {
+    display: none; align-items: center; justify-content: center; gap: 7px;
+    margin: 10px auto 0; width: fit-content;
+    font-family: 'Tajawal', sans-serif; font-size: 14px; font-weight: 700; color: #1b1405;
+    background: linear-gradient(135deg, #f0d78c, #c9a24b);
+    border: 1px solid #c9a24b; border-radius: 999px;
+    box-shadow: 0 3px 14px rgba(201, 162, 75, .30);
+    padding: 8px 18px; min-height: 40px; box-sizing: border-box;
+    text-decoration: none; cursor: pointer;
+    transition: transform .08s ease;
+}
+.tg-open:active { transform: scale(.96); }
+.tg-open svg { width: 15px; height: 15px; }
+.misbaha.no-tg .tg-open { display: inline-flex; }
+
 /* target chips */
 .targets { display: flex; justify-content: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .chip {
@@ -494,6 +510,7 @@ body.theme-light { background: #f4ecd7; }
             </div>
         </div>
         <div class="save-note" id="save-note"></div>
+        <a class="tg-open" href="https://t.me/masbaha_azkar_bot/azkar" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg><span>افتح في تيليجرام</span></a>
     </div>
 
     <div class="sheet-backdrop" id="sheet-backdrop"></div>
@@ -507,6 +524,7 @@ body.theme-light { background: #f4ecd7; }
       
       <p>اختر وقتك وذكرك</p>
       <p id="reminder-status" role="status" aria-live="polite"></p>
+      <a class="tg-open" href="https://t.me/masbaha_azkar_bot/azkar" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg><span>افتح في تيليجرام</span></a>
       <div id="reminder-list"></div>
       <form id="reminder-form">
         <label for="reminder-time">وقت التذكير</label><input type="time" id="reminder-time" required value="08:00" dir="ltr">
@@ -583,6 +601,9 @@ body.theme-light { background: #f4ecd7; }
     } else if (tg) {
         try { tg.ready(); tg.expand(); } catch (e) {}
     }
+
+    // outside Telegram: reveal the one-tap path into the bot (reminders live there)
+    if (!inTelegram) { document.getElementById('root').classList.add('no-tg'); }
 
     // ---- persistence: Telegram CloudStorage with localStorage fallback ----
     function loadStored(cb) {
