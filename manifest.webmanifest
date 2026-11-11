@@ -1,7 +1,7 @@
 {
   "name": "مِسْبَحَة | Misbaha - عداد التسبيح والأذكار",
   "short_name": "مِسْبَحَة",
-  "description": "Free online tasbih and dhikr counter in Arabic and English. مسبحة إلكترونية مجانية.",
+  "description": "مسبحة إلكترونية: اختر الذِّكر، حدِّد هدفك، والمس الدائرة للعدّ. An electronic tasbih: pick a dhikr, set a goal, and tap the circle to count.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
