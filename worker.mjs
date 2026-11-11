@@ -25,17 +25,60 @@ export default {
   if(!env.BOT_TOKEN)return response({error:'not_ready'},503);env.BOT_TOKEN=env.BOT_TOKEN.trim();let body,user;try{const raw=await req.text();if(raw.length>16000)return response({error:'size'},413);body=JSON.parse(raw);user=await authenticate(body.initData,env.BOT_TOKEN);}catch{return response({error:'unauthorized'},401);}
   try{
    if(body.action==='list'){const r=await env.DB.prepare('SELECT id,time,dhikr,enabled FROM reminders WHERE user_id=? ORDER BY time').bind(user).all();return response({reminders:r.results});}
-   if(body.action==='delete'){if(typeof body.id!=='string')return response({error:'invalid'},400);await env.DB.prepare('DELETE FROM reminders WHERE id=? AND user_id=?').bind(body.id,user).run();return response({ok:true});}
+   if(body.action==='delete'){if(typeof body.id!=='string')return response({error:'invalid'},400);await env.DB.batch([env.DB.prepare('DELETE FROM delivery_timing WHERE reminder_id IN (SELECT id FROM reminders WHERE id=? AND user_id=?)').bind(body.id,user),env.DB.prepare('DELETE FROM reminders WHERE id=? AND user_id=?').bind(body.id,user)]);await armClock(env);return response({ok:true});}
    if(body.action!=='add'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(body.time||'')||!Number.isInteger(body.dhikr)||body.dhikr<0||body.dhikr>=ADHKAR.length||typeof body.timezone!=='string'||body.timezone.length>80)return response({error:'invalid'},400);
    let next;try{next=nextOccurrence(body.time,body.timezone);}catch{return response({error:'timezone'},400);}
-   const id=crypto.randomUUID();const r=await env.DB.prepare('INSERT INTO reminders(id,user_id,time,timezone,dhikr,next_run,enabled) SELECT ?,?,?,?,?,?,1 WHERE (SELECT COUNT(*) FROM reminders WHERE user_id=?)<5 AND NOT EXISTS(SELECT 1 FROM reminders WHERE user_id=? AND time=? AND dhikr=?)').bind(id,user,body.time,body.timezone,body.dhikr,next,user,user,body.time,body.dhikr).run();if(!r.meta.changes)return response({error:'limit_or_duplicate'},409);return response({ok:true,id});
+   const id=crypto.randomUUID();const r=await env.DB.prepare('INSERT INTO reminders(id,user_id,time,timezone,dhikr,next_run,enabled) SELECT ?,?,?,?,?,?,1 WHERE (SELECT COUNT(*) FROM reminders WHERE user_id=?)<5 AND NOT EXISTS(SELECT 1 FROM reminders WHERE user_id=? AND time=? AND dhikr=?)').bind(id,user,body.time,body.timezone,body.dhikr,next,user,user,body.time,body.dhikr).run();if(!r.meta.changes)return response({error:'limit_or_duplicate'},409);await armClock(env);return response({ok:true,id});
   }catch(e){console.error('database operation failed');return response({error:'server'},500);}
  },
- async scheduled(event,env,ctx){if(!env.BOT_TOKEN)return;const now=Date.now();const rows=await env.DB.prepare('SELECT * FROM reminders WHERE enabled=1 AND next_run<=? ORDER BY next_run LIMIT 25').bind(now).all();
- for(const r of rows.results){const next=nextOccurrence(r.time,r.timezone,now);const claim=await env.DB.prepare('UPDATE reminders SET next_run=? WHERE id=? AND next_run=? AND enabled=1').bind(next,r.id,r.next_run).run();if(!claim.meta.changes)continue;
-  // Do not send stale notifications after a long outage. Atomic claim avoids duplicate cron sends.
-  if(now-r.next_run>15*60000)continue;
-  try{const res=await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:r.user_id,text:'حان وقت الذِّكر 🌿\n\n'+ADHKAR[r.dhikr],reply_markup:{inline_keyboard:[[{text:'افتح المِسبحة',web_app:{url:'https://misbaha-daily.github.io/misbaha/'}}]]}})});const out=await res.json();if(out.ok){await env.DB.prepare('UPDATE reminders SET last_sent=?,last_error=NULL,retries=0 WHERE id=?').bind(now,r.id).run();}else{await env.DB.prepare('UPDATE reminders SET last_error=? WHERE id=?').bind(out.error_code||500,r.id).run();if(out.error_code===429&&(r.retries||0)<3){await env.DB.prepare('UPDATE reminders SET next_run=?,retries=retries+1 WHERE id=?').bind(now+Math.max(60,Math.min(900,out.parameters?.retry_after||60))*1000,r.id).run();}if(out.error_code===403)await env.DB.prepare('UPDATE reminders SET enabled=0 WHERE id=?').bind(r.id).run();console.error('telegram send rejected',out.error_code);}}catch{await env.DB.prepare('UPDATE reminders SET last_error=599 WHERE id=?').bind(r.id).run();console.error('telegram send not confirmed');}
- }
+ async scheduled(event,env,ctx){
+  // The minute cron is only recovery/fallback. Normal dispatch uses the absolute-time alarm.
+  if(env.CLOCK){try{const r=await clock(env).fetch('https://clock/run',{method:'POST'});if(r.ok)return;}catch{console.error('alarm recovery unavailable');}}
+  await dispatchDue(env,'cron');
  }
 };
+function clock(env){return env.CLOCK.get(env.CLOCK.idFromName('daily-reminders'));}
+async function armClock(env){if(!env.CLOCK)return;try{const r=await clock(env).fetch('https://clock/arm',{method:'POST'});if(!r.ok)throw Error();}catch{console.error('alarm scheduling deferred to fallback');}}
+export async function dispatchDue(env,source='alarm'){
+ if(!env.BOT_TOKEN)return;
+ const started=Date.now();
+ const rows=await env.DB.prepare('SELECT * FROM reminders WHERE enabled=1 AND next_run<=? ORDER BY next_run LIMIT 25').bind(started).all();
+ let cursor=0;
+ // Bound concurrency instead of making every recipient wait for prior network round trips.
+ async function sendNext(){while(cursor<rows.results.length){const r=rows.results[cursor++];
+  const next=nextOccurrence(r.time,r.timezone,started);
+  const claim=await env.DB.prepare('UPDATE reminders SET next_run=? WHERE id=? AND next_run=? AND enabled=1').bind(next,r.id,r.next_run).run();
+  if(!claim.meta.changes||started-r.next_run>15*60000)continue;
+  try{
+   const res=await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN.trim()}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(10000),body:JSON.stringify({chat_id:r.user_id,text:'حان وقت الذِّكر 🌿\n\n'+ADHKAR[r.dhikr],reply_markup:{inline_keyboard:[[{text:'افتح المِسبحة',web_app:{url:'https://misbaha-daily.github.io/misbaha/'}}]]}})});
+   const out=await res.json();
+   if(out.ok){const ack=Date.now();await env.DB.batch([
+    env.DB.prepare('UPDATE reminders SET last_sent=?,last_error=NULL,retries=0 WHERE id=?').bind(ack,r.id),
+    env.DB.prepare('INSERT OR REPLACE INTO delivery_timing(reminder_id,due_ms,started_ms,ack_ms,telegram_ms,source) VALUES (?,?,?,?,?,?)').bind(r.id,r.next_run,started,ack,out.result?.date?out.result.date*1000:null,source)
+   ]);
+   }else{
+    await env.DB.prepare('UPDATE reminders SET last_error=? WHERE id=?').bind(out.error_code||500,r.id).run();
+    if(out.error_code===429&&(r.retries||0)<3)await env.DB.prepare('UPDATE reminders SET next_run=?,retries=retries+1 WHERE id=?').bind(Date.now()+Math.max(60,Math.min(900,out.parameters?.retry_after||60))*1000,r.id).run();
+    if(out.error_code===403)await env.DB.prepare('UPDATE reminders SET enabled=0 WHERE id=?').bind(r.id).run();
+    console.error('telegram send rejected',out.error_code);
+   }
+  }catch{await env.DB.prepare('UPDATE reminders SET last_error=599 WHERE id=?').bind(r.id).run();console.error('telegram send not confirmed');}
+ }}
+ await Promise.all(Array.from({length:Math.min(5,rows.results.length)},sendNext));
+}
+export class ReminderClock {
+ constructor(ctx,env){this.ctx=ctx;this.env=env;this.queue=Promise.resolve();}
+ serialize(job){const result=this.queue.then(job);this.queue=result.catch(()=>{});return result;}
+ async arm(){
+  const row=await this.env.DB.prepare('SELECT MIN(next_run) AS due FROM reminders WHERE enabled=1').first();
+  if(row?.due==null){await this.ctx.storage.deleteAlarm();return;}
+  const target=Math.max(row.due,Date.now()+20);
+  await this.ctx.storage.setAlarm(target);
+ }
+ async fetch(req){return this.serialize(async()=>{
+  if(new URL(req.url).pathname==='/status')return Response.json({alarm:await this.ctx.storage.getAlarm()});
+  if(new URL(req.url).pathname==='/run')await dispatchDue(this.env,'cron-recovery');
+  await this.arm();return new Response('ok');
+ });}
+ async alarm(){return this.serialize(async()=>{try{await dispatchDue(this.env,'alarm');}finally{await this.arm();}});}
+}
