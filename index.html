@@ -227,6 +227,27 @@ header { display: flex; align-items: center; justify-content: space-between; gap
     transition: border-color .15s;
 }
 .dhikr-item:active, .dhikr-item.sel { border-color: var(--gold); background: rgba(29, 74, 84, .6); }
+.dhikr-actions {display:flex;align-items:center;justify-content:center;gap:10px}
+.dhikr-actions .dhikr-switch {padding:9px 14px}
+.reminder-entry {background:linear-gradient(135deg,#f0d78c,#c9a24b);color:#201a0b}
+.reminder-entry svg {width:18px;height:18px}
+/* Reminders use the same compact bottom-sheet language. */
+.reminder-backdrop {position:fixed;inset:0;background:#030a0db3;backdrop-filter:blur(3px);z-index:24;display:none}
+.reminder-sheet {position:fixed;bottom:0;left:0;right:0;z-index:25;background:linear-gradient(180deg,#12313a,#0b2129);border-radius:22px 22px 0 0;border-top:1px solid #c9a24b66;padding:16px 18px calc(18px + env(safe-area-inset-bottom,0px));max-height:72%;overflow:auto;display:none;color:#f3ead3;box-sizing:border-box}
+.reminder-open .reminder-sheet,.reminder-open .reminder-backdrop {display:block}
+.reminder-title {display:flex;align-items:center;justify-content:space-between;gap:12px}
+.reminder-title h2 {font-family:Amiri,serif;color:#f0d78c;font-size:24px;margin:0}
+.reminder-sheet p {font-size:13px;line-height:1.7;margin:9px 0;color:#f3ead3b3}
+.reminder-sheet label {display:block;font-size:14px;margin:10px 0 6px}
+.reminder-sheet input,.reminder-sheet select {box-sizing:border-box;display:block;width:100%;background:#0b2129;color:#f3ead3;border:1px solid #c9a24b66;border-radius:12px;padding:12px;font:inherit;font-size:16px;min-height:46px;color-scheme:dark}
+.reminder-sheet select {font-family:Amiri,serif}
+.reminder-sheet .reminder-submit {width:100%;justify-content:center;margin-top:14px}
+.reminder-row {display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #c9a24b33}
+.reminder-row b {display:block;color:#f0d78c;font-size:19px;text-align:right;font-variant-numeric:tabular-nums}
+.reminder-row span,.reminder-row small {display:block;font-size:14px;line-height:1.6}
+.reminder-row span {font-family:Amiri,serif}
+button:disabled {opacity:.5;cursor:wait}
+@media(max-width:350px){header .brand h1{font-size:21px}header .brand{gap:5px}header .brand .dot{width:27px;height:27px}header .icon-btn{width:35px;height:35px}header>div:last-child{gap:5px!important}}
 </style>
 </head>
 <body>
@@ -235,6 +256,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
         <header>
             <div class="brand"><div class="dot"></div><h1>مِسْبَحَة</h1></div>
             <div style="display:flex;gap:8px">
+
                 <button class="icon-btn" id="btn-share" aria-label="مشاركة">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" /><path d="M12 3v13" /><path d="m7 8 5-5 5 5" /></svg>
                 </button>
@@ -249,11 +271,11 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 
         <div class="dhikr-zone">
             <div class="dhikr-text" id="dhikr-text"></div>
-            <button class="dhikr-switch" id="btn-dhikr">
+            <div class="dhikr-actions"><button class="dhikr-switch" id="btn-dhikr">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7" /></svg>
                 تغيير الذِّكر
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-            </button>
+            </button><button class="dhikr-switch reminder-entry" id="btn-reminders" aria-label="التذكيرات" title="التذكيرات"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span>التذكير</span></button></div>
         </div>
 
         <div class="targets" id="targets"></div>
@@ -306,6 +328,19 @@ header { display: flex; align-items: center; justify-content: space-between; gap
         <h2>اختر الذِّكر</h2>
         <div class="dhikr-list" role="listbox" id="dhikr-list"></div>
     </div>
+    <div class="reminder-backdrop" id="reminder-backdrop"></div>
+    <section class="reminder-sheet" id="reminder-sheet" role="dialog" aria-modal="true" aria-labelledby="reminder-heading" aria-hidden="true">
+      <div class="reminder-title"><h2 id="reminder-heading">تذكيرٌ بالذِّكر</h2><button type="button" class="icon-btn" id="reminder-close" aria-label="إغلاق">✕</button></div>
+      <p>اختر وقتك وذِكرك، وتصلك رسالة يومية من البوت.</p>
+      <p id="reminder-status" role="status" aria-live="polite"></p>
+      <div id="reminder-list"></div>
+      <form id="reminder-form">
+        <label for="reminder-time">وقت التذكير</label><input type="time" id="reminder-time" required value="08:00" dir="ltr">
+        <label for="reminder-dhikr">الذِّكر</label><select id="reminder-dhikr"></select>
+        <button class="dhikr-switch reminder-submit" id="reminder-save" type="submit">إضافة تذكير يومي</button>
+      </form>
+      <p>حتى 5 تذكيرات. تصلك الرسائل والتطبيق مغلق، ما دام البوت غير محظور. ظهور الإشعار يعتمد على إعدادات تيليجرام وجهازك. قد يتأخر الإرسال قليلًا.</p>
+    </section>
 </div>
 
 <script>
@@ -597,5 +632,6 @@ header { display: flex; align-items: center; justify-content: space-between; gap
     });
 })();
 </script>
+<script src="./reminders.js?v=1"></script>
 </body>
 </html>
