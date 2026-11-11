@@ -297,19 +297,19 @@ button:disabled {opacity:.5;cursor:wait}
     color: var(--gold-hi); letter-spacing: .5px;
 }
 .stats-body { overflow-y: auto; margin-top: 14px; padding-bottom: 8px; flex: 1; }
-.stats-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.stats-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .scard {
     background: var(--card-bg);
     border: 1px solid rgba(201, 162, 75, .2);
-    border-radius: 14px; padding: 12px 4px 10px;
+    border-radius: 14px; padding: 18px 4px 16px;
     text-align: center;
 }
 .scard b {
-    display: block; font-size: 20px; font-weight: 800; color: var(--gold-hi);
+    display: block; font-size: 28px; font-weight: 800; color: var(--gold-hi);
     font-variant-numeric: tabular-nums; line-height: 1.2;
     text-shadow: 0 0 14px rgba(201, 162, 75, .3);
 }
-.scard span { display: block; font-size: 11.5px; color: var(--cream-dim); margin-top: 3px; }
+.scard span { display: block; font-size: 13px; color: var(--cream-dim); margin-top: 5px; }
 .streak-row {
     display: flex; align-items: center; justify-content: space-between;
     margin-top: 10px; padding: 12px 16px;
@@ -526,8 +526,6 @@ body.theme-light { background: #f4ecd7; }
       <div class="stats-body">
         <div class="stats-cards">
           <div class="scard"><b id="s-today">0</b><span>اليوم</span></div>
-          <div class="scard"><b id="s-week">0</b><span>الأسبوع</span></div>
-          <div class="scard"><b id="s-month">0</b><span>الشهر</span></div>
           <div class="scard"><b id="s-total">0</b><span>المجموع</span></div>
         </div>
         <div class="streak-row"><span>أيام متتالية</span><b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c4.4 0 7-2.9 7-6.5 0-3.2-2.2-4.9-3.5-7C14.2 6.3 13.5 4.4 13.5 2c-3 1.8-4.5 4.6-4.5 7 0 1.5.5 2.8 1 3.8-1.2-.3-2.2-1-2.8-2.3C5.9 11.9 5 13.6 5 15.5 5 19.1 7.6 22 12 22Z"/></svg><span id="s-streak">0</span></b></div>
@@ -847,20 +845,13 @@ body.theme-light { background: #f4ecd7; }
         // the in-progress count appears as a live entry until it is finalized (switch / reset / target)
         var live = (ready && state && state.count > 0) ? [state.dhikr, Math.round(state.count), nowD.getTime()] : null;
         var view = live ? sessions.concat([live]) : sessions;
-        var sums = {}, total = 0, monthSum = 0;
+        var sums = {}, total = 0;
         var mY = nowD.getFullYear(), mM = nowD.getMonth();
         view.forEach(function (r) {
             var k = dayKey(r[2]);
             sums[k] = (sums[k] || 0) + r[1];
             total += r[1];
-            var d = new Date(r[2]);
-            if (d.getFullYear() === mY && d.getMonth() === mM) monthSum += r[1];
         });
-        var weekSum = 0;
-        for (var i = 0; i < 7; i++) {
-            var dk = dayKey(nowD.getTime() - i * 86400000);
-            weekSum += sums[dk] || 0;
-        }
         // streak: consecutive active days, from today (or yesterday if today is still fresh)
         var streak = 0;
         var start = sums[todayK] ? 0 : 1;
@@ -869,8 +860,6 @@ body.theme-light { background: #f4ecd7; }
             else break;
         }
         $('s-today').textContent = String(sums[todayK] || 0);
-        $('s-week').textContent = String(weekSum);
-        $('s-month').textContent = String(monthSum);
         $('s-total').textContent = String(total);
         $('s-streak').textContent = String(streak);
 
