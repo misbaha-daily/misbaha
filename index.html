@@ -121,22 +121,6 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .dhikr-switch:active { transform: scale(.96); background: rgba(201, 162, 75, .25); }
 .dhikr-switch svg { width: 15px; height: 15px; }
 
-/* open-in-telegram: gold pill, visible only outside Telegram */
-.tg-open {
-    display: none; align-items: center; justify-content: center; gap: 7px;
-    margin: 10px auto 0; width: fit-content;
-    font-family: 'Tajawal', sans-serif; font-size: 14px; font-weight: 700; color: #1b1405;
-    background: linear-gradient(135deg, #f0d78c, #c9a24b);
-    border: 1px solid #c9a24b; border-radius: 999px;
-    box-shadow: 0 3px 14px rgba(201, 162, 75, .30);
-    padding: 8px 18px; min-height: 40px; box-sizing: border-box;
-    text-decoration: none; cursor: pointer;
-    transition: transform .08s ease;
-}
-.tg-open:active { transform: scale(.96); }
-.tg-open svg { width: 15px; height: 15px; }
-.misbaha.no-tg .tg-open { display: inline-flex; }
-
 /* target chips */
 .targets { display: flex; justify-content: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .chip {
@@ -219,13 +203,6 @@ header { display: flex; align-items: center; justify-content: space-between; gap
     transform: scaleX(0); transform-origin: right;
     pointer-events: none;
 }
-.save-note {
-    text-align: center;
-    font-size: 10.5px;
-    color: var(--faint);
-    padding-top: 4px;
-    min-height: 13px;
-}
 
 /* dhikr sheet */
 .sheet-backdrop {
@@ -265,7 +242,8 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .dhikr-item:active, .dhikr-item.sel { border-color: var(--gold); background: var(--sel-bg); }
 .dhikr-actions {display:flex;align-items:center;justify-content:center;gap:10px}
 .dhikr-actions .dhikr-switch {padding:9px 14px}
-.reminder-entry {background:linear-gradient(135deg,#f0d78c,#c9a24b);color:#201a0b}
+.reminder-entry {display:none;background:linear-gradient(135deg,#f0d78c,#c9a24b);color:#201a0b}
+.misbaha.in-tg .reminder-entry {display:inline-flex}
 .reminder-entry svg {width:18px;height:18px}
 /* Reminders use the same compact bottom-sheet language. */
 .reminder-backdrop {position:fixed;inset:0;background:var(--backdrop);backdrop-filter:blur(3px);z-index:24;display:none}
@@ -511,8 +489,6 @@ body.theme-light { background: #f4ecd7; }
                 </button>تصفير (اضغط مطوّلًا)
             </div>
         </div>
-        <div class="save-note" id="save-note"></div>
-        <a class="tg-open" href="https://t.me/masbaha_azkar_bot/azkar" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg><span>افتح في تيليجرام</span></a>
     </div>
 
     <div class="sheet-backdrop" id="sheet-backdrop"></div>
@@ -526,7 +502,6 @@ body.theme-light { background: #f4ecd7; }
       
       <p>اختر وقتك وذكرك</p>
       <p id="reminder-status" role="status" aria-live="polite"></p>
-      <a class="tg-open" href="https://t.me/masbaha_azkar_bot/azkar" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4Z"/></svg><span>افتح في تيليجرام</span></a>
       <div id="reminder-list"></div>
       <form id="reminder-form">
         <label for="reminder-time">وقت التذكير</label><input type="time" id="reminder-time" required value="08:00" dir="ltr">
@@ -605,8 +580,8 @@ body.theme-light { background: #f4ecd7; }
         try { tg.ready(); tg.expand(); } catch (e) {}
     }
 
-    // outside Telegram: reveal the one-tap path into the bot (reminders live there)
-    if (!inTelegram) { document.getElementById('root').classList.add('no-tg'); }
+    // reminders live in the Telegram bot: show the reminders entry only inside Telegram
+    if (inTelegram) { document.getElementById('root').classList.add('in-tg'); }
 
     // ---- persistence: Telegram CloudStorage with localStorage fallback ----
     function loadStored(cb) {
@@ -771,7 +746,7 @@ body.theme-light { background: #f4ecd7; }
     var $ = function (id) { return document.getElementById(id); };
     var rootEl = $('root'), counterEl = $('counter'), countEl = $('count'), roundsEl = $('rounds'),
         ringEl = $('ring-fg-circle'), blessingEl = $('blessing'), dhikrTextEl = $('dhikr-text'),
-        statDayEl = $('stat-day'), statTotalEl = $('stat-total'), saveNoteEl = $('save-note'),
+        statDayEl = $('stat-day'), statTotalEl = $('stat-total'),
         resetFillEl = $('reset-fill');
 
     // ---- theme: dark by default, light saved on this device only ----
@@ -818,7 +793,6 @@ body.theme-light { background: #f4ecd7; }
         for (var j = 0; j < items.length; j++) {
             items[j].className = 'dhikr-item' + (j === state.dhikr ? ' sel' : '');
         }
-        saveNoteEl.textContent = hasCloud ? 'يُحفَظ تلقائيًا على حسابك في تيليجرام' : 'يُحفَظ تلقائيًا على هذا الجهاز';
     }
 
     function setState(next) {
