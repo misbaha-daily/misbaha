@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -33,7 +33,24 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebApplication","name":"Misbaha","alternateName":"مِسْبَحَة - عداد التسبيح والأذكار","url":"https://misbaha-daily.github.io/misbaha/","description":"Free online tasbih and dhikr counter in Arabic and English. مسبحة إلكترونية مجانية لعدّ التسبيح والاستغفار والأذكار. No sign-up; counts are stored on the device only.","applicationCategory":"LifestyleApplication","operatingSystem":"Any","inLanguage":["ar","en"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"browserRequirements":"Requires JavaScript"}
 </script>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+// Load Telegram's WebApp script only inside the Telegram WebView: regular visitors
+// never contact telegram.org (privacy), and the page is not blocked on it (speed).
+window.__tgReady = (function () {
+    var isTg = /tgWebAppData/.test(location.hash) || /Telegram/i.test(navigator.userAgent);
+    if (!isTg) return Promise.resolve(false);
+    return new Promise(function (resolve) {
+        var done = false;
+        function finish(v) { if (!done) { done = true; resolve(v); } }
+        var s = document.createElement('script');
+        s.src = 'https://telegram.org/js/telegram-web-app.js';
+        s.onload = function () { finish(true); };
+        s.onerror = function () { finish(false); };
+        document.head.appendChild(s);
+        setTimeout(function () { finish(!!(window.Telegram && window.Telegram.WebApp)); }, 4000);
+    });
+})();
+</script>
 <link rel="stylesheet" href="./fonts/fonts.css?v=3">
 <style>
 html, body { margin: 0; min-height: 100%; }
@@ -114,6 +131,12 @@ header { display: flex; align-items: center; justify-content: space-between; gap
     position: relative;
 }
 .icon-btn:active { transform: scale(.92); }
+.icon-btn:focus-visible, .dhikr-switch:focus-visible, .chip:focus-visible,
+.counter:focus-visible, .dhikr-item:focus-visible, .share-option:focus-visible,
+.sound-option:focus-visible, .set-row:focus-visible {
+    outline: 2px solid var(--gold-hi);
+    outline-offset: 2px;
+}
 .icon-btn.gold {
     background: linear-gradient(135deg, #f0d78c, #c9a24b);
     border-color: var(--gold);
@@ -616,12 +639,12 @@ body.theme-light { background: #f4ecd7; }
 
         <div class="controls">
             <div class="btn-label">
-                <button class="icon-btn" id="btn-minus" aria-label="إنقاص">
+                <button class="icon-btn" id="btn-minus" aria-label="إنقاص" data-i18n-aria="undo">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14" /></svg>
                 </button><span data-i18n="undo">تراجع</span>
             </div>
             <div class="btn-label">
-                <button class="icon-btn reset-hold" id="btn-reset" aria-label="تصفير">
+                <button class="icon-btn reset-hold" id="btn-reset" aria-label="تصفير" data-i18n-aria="resetHold">
                     <span class="fill" id="reset-fill"></span>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5" /></svg>
                 </button><span data-i18n="resetHold">تصفير (اضغط مطوّلًا)</span>
@@ -778,7 +801,7 @@ body.theme-light { background: #f4ecd7; }
 </div>
 
 <script>
-(function () {
+window.__tgReady.then(function () { (function () {
     'use strict';
 
     var CATS = [
@@ -1303,6 +1326,15 @@ body.theme-light { background: #f4ecd7; }
         if (!soundBlocked) soundDoneForTap = clickSound();
         tap();
     });
+    counterEl.addEventListener('keydown', function (e) {
+        if (e.repeat) return;
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            initAudio();
+            clickSound();
+            tap();
+        }
+    });
     counterEl.addEventListener('touchend', function () {
         initAudio(); resumeAudio();
         unlockPool();
@@ -1491,13 +1523,20 @@ body.theme-light { background: #f4ecd7; }
         persist();
         render();
     });
-})();
+})(); });
 </script>
 <script>
 // anonymous visit counter: a random id is kept on this device only; no personal data is sent or stored
 (function(){try{var k='misbaha_vid',d=null;try{d=localStorage.getItem(k);}catch(e){}if(!d){if(crypto.randomUUID){d=crypto.randomUUID();}else{var b=crypto.getRandomValues(new Uint8Array(16));b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;var s=Array.from(b,function(x){return x.toString(16).padStart(2,'0');}).join('');d=s.slice(0,8)+'-'+s.slice(8,12)+'-'+s.slice(12,16)+'-'+s.slice(16,20)+'-'+s.slice(20);}try{localStorage.setItem(k,d);}catch(e){}}var API=window.MISBAHA_REMINDERS_API||'https://misbaha-reminders.misbaha-daily.workers.dev';fetch(API+'/visit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({d:d})}).catch(function(){});}catch(e){}})();
 </script>
-<script src="./reminders.js?v=2"></script>
+<script>
+// reminders.js reads window.Telegram once at load, so it must wait for __tgReady.
+window.__tgReady.then(function () {
+    var r = document.createElement('script');
+    r.src = './reminders.js?v=2';
+    document.body.appendChild(r);
+});
+</script>
 <noscript><div class="noscript-box">مِسْبَحَة - مسبحة إلكترونية مجانية لعدّ التسبيح والاستغفار والأذكار. يحتاج الموقع إلى تفعيل JavaScript.<br><br>Misbaha is a free online tasbih and dhikr counter in Arabic and English. It needs JavaScript enabled to work.</div></noscript>
 <script>
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
