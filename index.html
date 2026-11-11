@@ -3,9 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>مِسْبَحَة</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="./fonts/fonts.css">
+<link rel="stylesheet" href="./fonts/fonts.css?v=3">
 <style>
 html, body { margin: 0; min-height: 100%; }
 body { background: #081820; }
@@ -18,10 +21,8 @@ body { background: #081820; }
     --gold-hi: #f0d78c;
     --cream: #f3ead3;
     --cream-dim: rgba(243, 234, 211, .55);
-    /* device notch + Telegram UI overlays (Bot API 8.0 fullscreen);
-       --overlay-top is set from JS after reading the live insets */
-    --safe-top: max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px), var(--tg-content-safe-area-inset-top, 0px), var(--overlay-top, 0px));
-    --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px), var(--tg-content-safe-area-inset-bottom, 0px));
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
     position: fixed;
     inset: 0;
     z-index: 10;
@@ -342,55 +343,6 @@ header { display: flex; align-items: center; justify-content: space-between; gap
             if (tg.setHeaderColor) tg.setHeaderColor('#081820');
             if (tg.setBackgroundColor) tg.setBackgroundColor('#081820');
             if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
-            // Fullscreen mode (Bot API 8.0+): request immediately; if the client
-            // refuses (fullscreenFailed), stay expanded and retry once on the
-            // first user tap. Older clients simply keep the expanded view.
-            var wantFullscreen = function () {
-                try {
-                    if (tg.isVersionAtLeast && tg.isVersionAtLeast('8.0') && tg.requestFullscreen && !tg.isFullscreen) {
-                        tg.requestFullscreen();
-                    }
-                } catch (e) {}
-            };
-            wantFullscreen();
-            if (tg.onEvent) {
-                try {
-                    tg.onEvent('fullscreenFailed', function () {
-                        var once = function () {
-                            document.removeEventListener('pointerdown', once);
-                            wantFullscreen();
-                        };
-                        document.addEventListener('pointerdown', once);
-                    });
-                } catch (e) {}
-            }
-            // Fullscreen overlay offset: push the header below Telegram's
-            // overlay pills (close / chevron / ...). Some clients (iOS) report
-            // 0 for both inset objects in fullscreen, so fall back to a fixed
-            // offset that clears the status bar plus the pills.
-            var applyTopInset = function () {
-                try {
-                    var top = 0;
-                    if (tg.isFullscreen) {
-                        var sa = (tg.safeAreaInset && tg.safeAreaInset.top) || 0;
-                        var csa = (tg.contentSafeAreaInset && tg.contentSafeAreaInset.top) || 0;
-                        top = Math.max(sa, csa);
-                        if (top <= 0) top = 100;
-                    }
-                    document.documentElement.style.setProperty('--overlay-top', top + 'px');
-                } catch (e) {}
-            };
-            applyTopInset();
-            setTimeout(applyTopInset, 300);
-            setTimeout(applyTopInset, 1200);
-            if (tg.onEvent) {
-                try {
-                    tg.onEvent('safeAreaChanged', applyTopInset);
-                    tg.onEvent('contentSafeAreaChanged', applyTopInset);
-                    tg.onEvent('fullscreenChanged', applyTopInset);
-                    tg.onEvent('activated', applyTopInset);
-                } catch (e) {}
-            }
             hasCloud = !!(tg.CloudStorage && tg.CloudStorage.getItem);
         } catch (e) { hasCloud = false; }
     } else if (tg) {
