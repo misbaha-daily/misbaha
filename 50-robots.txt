@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://misbaha-daily.github.io/misbaha/sitemap.xml
