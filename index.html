@@ -435,15 +435,25 @@ button:disabled {opacity:.5;cursor:wait}
     // ---- sound (optional, off by default) ----
     var audioCtx = null;
     function clickSound() {
-        if (!state.snd) return;
+        if (!state || !state.snd) return;
         try {
-            audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-            var o = audioCtx.createOscillator(), g = audioCtx.createGain();
-            o.type = 'sine'; o.frequency.value = 1180;
-            g.gain.setValueAtTime(0.06, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.07);
-            o.connect(g); g.connect(audioCtx.destination);
-            o.start(); o.stop(audioCtx.currentTime + 0.08);
+            var Audio = window.AudioContext || window.webkitAudioContext;
+            if (!Audio) return;
+            if (!audioCtx || audioCtx.state === 'closed') audioCtx = new Audio();
+            var ctx = audioCtx;
+            function play() {
+                if (!state.snd || ctx.state !== 'running') return;
+                var o = ctx.createOscillator(), g = ctx.createGain();
+                o.type = 'sine'; o.frequency.value = 1180;
+                g.gain.setValueAtTime(0.06, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.07);
+                o.connect(g); g.connect(ctx.destination);
+                o.onended = function () { o.disconnect(); g.disconnect(); };
+                o.start(); o.stop(ctx.currentTime + 0.08);
+            }
+            // Resume inside a click gesture, including after a WebView interruption.
+            if (ctx.state !== 'running') ctx.resume().then(play).catch(function () {});
+            else play();
         } catch (e) {}
     }
 
@@ -520,9 +530,9 @@ button:disabled {opacity:.5;cursor:wait}
             setState(Object.assign(base, { count: next, total: base.total + 1, today: base.today + 1 }));
             buzz('tap');
         }
-        clickSound();
     }
     counterEl.addEventListener('pointerdown', function (e) { e.preventDefault(); tap(); });
+    counterEl.addEventListener('click', clickSound);
 
     $('btn-minus').addEventListener('click', function () {
         if (!ready || state.count <= 0) return;
@@ -576,7 +586,7 @@ button:disabled {opacity:.5;cursor:wait}
         update({ vib: !state.vib });
         if (!state.vib) { try { if (navigator.vibrate) navigator.vibrate(20); } catch (e) {} }
     });
-    $('btn-snd').addEventListener('click', function () { update({ snd: !state.snd }); });
+    $('btn-snd').addEventListener('click', function () { if (!ready) return; update({ snd: !state.snd }); if (state.snd) clickSound(); });
 
     // target chips
     TARGETS.forEach(function (t) {
