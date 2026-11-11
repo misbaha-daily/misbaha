@@ -465,7 +465,9 @@ button:disabled {opacity:.5;cursor:wait}
         pa.setAttribute('playsinline', '');
         pool.push(pa);
     }
+    var curKey = null;
     function setTone(key) {
+        curKey = key;
         poolSrc = soundSources[key] || null;
         pool.forEach(function (a) {
             try { a.pause(); } catch (e) {}
@@ -486,10 +488,62 @@ button:disabled {opacity:.5;cursor:wait}
             } catch (e) { a.muted = false; unlocked = false; }
         });
     }
+    // ---- Web Audio path: decoded buffers, near-zero start latency ----
+    var actx = null, buffers = {}, silentKeep = null;
+    function b64buf(uri) {
+        var bin = atob(uri.split(',')[1]), u = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+        return u.buffer;
+    }
+    function initAudio() {
+        if (!state || !state.snd || soundChoice === 'off') return;
+        if (actx) { resumeAudio(); return; }
+        try {
+            var AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            actx = new AC({ latencyHint: 'interactive' });
+            // Let Web Audio play with the iPhone silent switch on.
+            if (navigator.audioSession) {
+                try { navigator.audioSession.type = 'playback'; } catch (e) {}
+            } else {
+                // Older iOS: a silent media element moves the page to the media channel.
+                try {
+                    silentKeep = new Audio(soundSources.soft);
+                    silentKeep.loop = true; silentKeep.volume = 0.001;
+                    silentKeep.setAttribute('playsinline', '');
+                    var sp = silentKeep.play(); if (sp && sp.catch) sp.catch(function () {});
+                } catch (e) {}
+            }
+            Object.keys(soundSources).forEach(function (k) {
+                try {
+                    actx.decodeAudioData(b64buf(soundSources[k]), function (buf) { buffers[k] = buf; }, function () {});
+                } catch (e) {}
+            });
+            resumeAudio();
+        } catch (e) { actx = null; }
+    }
+    function resumeAudio() {
+        try { if (actx && actx.state !== 'running') { var p = actx.resume(); if (p && p.catch) p.catch(function () {}); } } catch (e) {}
+    }
+    document.addEventListener('visibilitychange', function () {
+        if (silentKeep) { try { if (document.hidden) silentKeep.pause(); else if (state && state.snd) silentKeep.play().catch(function () {}); } catch (e) {} }
+    });
+    function webClick() {
+        if (!actx || actx.state !== 'running' || !buffers[curKey]) return false;
+        try {
+            var src = actx.createBufferSource();
+            src.buffer = buffers[curKey];
+            src.connect(actx.destination);
+            src.start(0);
+            return true;
+        } catch (e) { return false; }
+    }
+
     // Returns true when playback was started for this call.
     var soundBlocked = false;
     function clickSound() {
         if (!state || !state.snd || soundChoice === 'off' || !poolSrc) return false;
+        if (webClick()) return true;
         try {
             var a = pool[poolIdx]; poolIdx = (poolIdx + 1) % POOL;
             a.muted = false;
@@ -580,16 +634,18 @@ button:disabled {opacity:.5;cursor:wait}
     var soundDoneForTap = false;
     counterEl.addEventListener('pointerdown', function (e) {
         e.preventDefault();
+        initAudio();
         soundDoneForTap = false;
         if (!soundBlocked) soundDoneForTap = clickSound();
         tap();
     });
     counterEl.addEventListener('touchend', function () {
+        initAudio(); resumeAudio();
         unlockPool();
         if (!soundDoneForTap || soundBlocked) { soundBlocked = false; clickSound(); }
         soundDoneForTap = true;
     }, { passive: true });
-    counterEl.addEventListener('click', function () { unlockPool(); });
+    counterEl.addEventListener('click', function () { initAudio(); unlockPool(); });
 
     $('btn-minus').addEventListener('click', function () {
         if (!ready || state.count <= 0) return;
@@ -653,6 +709,7 @@ button:disabled {opacity:.5;cursor:wait}
             soundChoice = b.getAttribute('data-sound');
             try { localStorage.setItem('misbaha.sound.v1', soundChoice); } catch (e) {}
             setTone(soundChoice);
+            initAudio();
             unlocked = false;
             update({ snd: soundChoice !== 'off' });
             if (state.snd) clickSound();
