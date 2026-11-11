@@ -412,6 +412,21 @@ body.theme-light { background: #f4ecd7; }
     .scard span { font-size: 10.5px; }
     .stats-head h2 { font-size: 23px; }
 }
+
+/* Hidden visitor-stats gate (opened by five quick taps on the logo) */
+.brand { -webkit-user-select: none; user-select: none; }
+.stats-backdrop { position: fixed; inset: 0; background: var(--backdrop); backdrop-filter: blur(3px); z-index: 40; display: none; }
+.stats-gate { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 41; width: min(320px, calc(100% - 48px)); background: linear-gradient(180deg, var(--sheet-1), var(--sheet-2)); border: 1px solid #c9a24b66; border-radius: 20px; padding: 20px 18px; display: none; color: var(--cream); box-sizing: border-box; box-shadow: 0 18px 50px rgba(0, 0, 0, .45); }
+.stats-open .stats-gate, .stats-open .stats-backdrop { display: block; }
+.stats-gate h2 { font-family: 'Amiri', serif; color: var(--gold-hi); font-size: 22px; margin: 0 0 6px; text-align: center; }
+.stats-gate p { font-size: 12px; line-height: 1.7; margin: 0 0 12px; color: var(--cream-dim); text-align: center; }
+.stats-gate input { box-sizing: border-box; display: block; width: 100%; background: var(--bg); color: var(--cream); border: 1px solid #c9a24b66; border-radius: 12px; padding: 12px; font: inherit; font-size: 16px; min-height: 46px; text-align: center; letter-spacing: 1px; color-scheme: var(--scheme); }
+.stats-gate .stats-err { display: none; color: #d94f4f; font-size: 13px; text-align: center; margin: 8px 0 0; }
+.stats-gate .stats-actions { display: flex; gap: 10px; margin-top: 14px; }
+.stats-gate .stats-btn { flex: 1; min-height: 46px; border-radius: 12px; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+.stats-gate .stats-btn.go { background: linear-gradient(135deg, var(--gold-hi), var(--gold)); color: #14232b; border: 1px solid var(--gold); }
+.stats-gate .stats-btn.cancel { background: var(--btn-bg); color: var(--cream); border: 1px solid #c9a24b66; }
+.misbaha.light .stats-gate .stats-btn.go { background: linear-gradient(135deg, #f0d78c, #c9a24b); color: #1b1405; }
 </style>
 </head>
 <body>
@@ -494,6 +509,17 @@ body.theme-light { background: #f4ecd7; }
         <h2>اختر الذِّكر</h2>
         <div class="dhikr-list" role="listbox" id="dhikr-list"></div>
     </div>
+        <div class="stats-backdrop" id="stats-backdrop"></div>
+    <section class="stats-gate" id="stats-gate" role="dialog" aria-modal="true" aria-label="إحصائيات الزوار">
+      <h2>إحصائيات الزوار</h2>
+      <p>منطقة خاصة بصاحب الموقع. أدخل الرمز السري لعرض الأرقام.</p>
+      <input id="stats-key" type="password" dir="ltr" autocomplete="off" placeholder="الرمز السري">
+      <div class="stats-err" id="stats-err">الرمز غير صحيح</div>
+      <div class="stats-actions">
+        <button type="button" class="stats-btn cancel" id="stats-cancel">إلغاء</button>
+        <button type="button" class="stats-btn go" id="stats-go">فتح</button>
+      </div>
+    </section>
     <div class="reminder-backdrop" id="reminder-backdrop"></div>
     <section class="reminder-sheet" id="reminder-sheet" role="dialog" aria-modal="true" aria-labelledby="reminder-heading" aria-hidden="true">
       <div class="reminder-title"><h2 id="reminder-heading">تذكيرٌ بالذِّكر</h2><button type="button" class="icon-btn" id="reminder-close" aria-label="إغلاق">✕</button></div>
@@ -1110,6 +1136,67 @@ body.theme-light { background: #f4ecd7; }
 <script>
 // anonymous visit counter: a random id is kept on this device only; no personal data is sent or stored
 (function(){try{var k='misbaha_vid',d=null;try{d=localStorage.getItem(k);}catch(e){}if(!d){if(crypto.randomUUID){d=crypto.randomUUID();}else{var b=crypto.getRandomValues(new Uint8Array(16));b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;var s=Array.from(b,function(x){return x.toString(16).padStart(2,'0');}).join('');d=s.slice(0,8)+'-'+s.slice(8,12)+'-'+s.slice(12,16)+'-'+s.slice(16,20)+'-'+s.slice(20);}try{localStorage.setItem(k,d);}catch(e){}}var API=window.MISBAHA_REMINDERS_API||'https://misbaha-reminders.misbaha-daily.workers.dev';fetch(API+'/visit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({d:d})}).catch(function(){});}catch(e){}})();
+</script>
+<script>
+// hidden visitor-stats entry: five quick taps on the logo open a key prompt.
+// the key is never in the site code; the owner types it and it stays on this device only (localStorage).
+(function () {
+    try {
+        var API = window.MISBAHA_REMINDERS_API || 'https://misbaha-reminders.misbaha-daily.workers.dev';
+        var STORE = 'misbaha_stats_key';
+        var root = document.querySelector('.misbaha');
+        var brand = document.querySelector('.brand');
+        var backdrop = document.getElementById('stats-backdrop');
+        var input = document.getElementById('stats-key');
+        var err = document.getElementById('stats-err');
+        var go = document.getElementById('stats-go');
+        var cancel = document.getElementById('stats-cancel');
+        if (!root || !brand || !input || !go) return;
+        var taps = 0, timer = null;
+        brand.addEventListener('click', function () {
+            taps++;
+            if (timer) clearTimeout(timer);
+            if (taps >= 5) { taps = 0; openGate(); return; }
+            timer = setTimeout(function () { taps = 0; }, 1500);
+        });
+        function openGate() {
+            err.style.display = 'none';
+            var saved = null;
+            try { saved = localStorage.getItem(STORE); } catch (e) {}
+            input.value = saved || '';
+            root.classList.add('stats-open');
+            setTimeout(function () { try { input.focus(); } catch (e) {} }, 80);
+        }
+        function closeGate() { root.classList.remove('stats-open'); go.disabled = false; }
+        function submit() {
+            var key = input.value.trim();
+            if (!key || go.disabled) return;
+            err.style.display = 'none';
+            go.disabled = true;
+            var url = API + '/stats?key=' + encodeURIComponent(key);
+            var win = null;
+            try { win = window.open('', '_blank'); } catch (e) {}
+            fetch(url, { cache: 'no-store' }).then(function (r) {
+                // a readable reply is the worker's JSON error: the key is wrong
+                if (win) { try { win.close(); } catch (e) {} }
+                go.disabled = false;
+                err.style.display = 'block';
+            }).catch(function () {
+                // the real stats page is HTML without cross-origin headers,
+                // so a blocked read here means the key was accepted
+                try { localStorage.setItem(STORE, key); } catch (e) {}
+                closeGate();
+                if (win) { try { win.location.href = url; return; } catch (e) {} }
+                window.location.href = url;
+            });
+        }
+        go.addEventListener('click', submit);
+        cancel.addEventListener('click', closeGate);
+        backdrop.addEventListener('click', closeGate);
+        input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeGate(); });
+    } catch (e) {}
+})();
 </script>
 <script src="./reminders.js?v=2"></script>
 </body>
