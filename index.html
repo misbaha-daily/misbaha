@@ -1107,6 +1107,10 @@ body.theme-light { background: #f4ecd7; }
     });
 })();
 </script>
+<script>
+// anonymous visit counter: a random id is kept on this device only; no personal data is sent or stored
+(function(){try{var k='misbaha_vid',d=null;try{d=localStorage.getItem(k);}catch(e){}if(!d){if(crypto.randomUUID){d=crypto.randomUUID();}else{var b=crypto.getRandomValues(new Uint8Array(16));b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;var s=Array.from(b,function(x){return x.toString(16).padStart(2,'0');}).join('');d=s.slice(0,8)+'-'+s.slice(8,12)+'-'+s.slice(12,16)+'-'+s.slice(16,20)+'-'+s.slice(20);}try{localStorage.setItem(k,d);}catch(e){}}var API=window.MISBAHA_REMINDERS_API||'https://misbaha-reminders.misbaha-daily.workers.dev';fetch(API+'/visit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({d:d})}).catch(function(){});}catch(e){}})();
+</script>
 <script src="./reminders.js?v=2"></script>
 </body>
 </html>
