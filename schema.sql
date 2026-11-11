@@ -2,3 +2,5 @@ CREATE TABLE IF NOT EXISTS reminders(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,t
 CREATE INDEX IF NOT EXISTS reminders_due ON reminders(enabled,next_run);
 CREATE INDEX IF NOT EXISTS reminders_user ON reminders(user_id);
 CREATE TABLE IF NOT EXISTS delivery_timing(reminder_id TEXT PRIMARY KEY,due_ms INTEGER NOT NULL,started_ms INTEGER NOT NULL,ack_ms INTEGER NOT NULL,telegram_ms INTEGER,source TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS visit_stats(k TEXT PRIMARY KEY,v INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS visit_devices(h TEXT PRIMARY KEY);
