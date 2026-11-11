@@ -20,7 +20,34 @@ export async function authenticate(data,token,now=Date.now()){
 function response(data,status=200){return new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'Content-Type','Access-Control-Allow-Methods':'POST, OPTIONS','Cache-Control':'no-store','Vary':'Origin'}});}
 export default {
  async fetch(req,env){
-  if(req.method==='OPTIONS')return response({});if(new URL(req.url).pathname==='/health'){if(!env.BOT_TOKEN)return response({ok:false},503);const check=await fetch('https://api.telegram.org/bot'+env.BOT_TOKEN.trim()+'/getMe');const info=await check.json();return response({ok:!!info.ok,bot:info.result?.username||null},info.ok?200:503);}if(req.method!=='POST'||new URL(req.url).pathname!=='/reminders')return response({error:'not_found'},404);
+  if(req.method==='OPTIONS')return response({});
+  const vpath=new URL(req.url).pathname;
+  if(vpath==='/visit'&&req.method==='POST'){
+   try{
+    const raw=await req.text();if(raw.length>300)return response({error:'size'},413);
+    const d=String((JSON.parse(raw)||{}).d||'');
+    if(!/^[0-9a-f-]{36}$/i.test(d))return response({error:'invalid'},400);
+    const h=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(d)))].map(x=>x.toString(16).padStart(2,'0')).join('');
+    if(!globalThis._vstats)globalThis._vstats=env.DB.batch([env.DB.prepare('CREATE TABLE IF NOT EXISTS visit_stats(k TEXT PRIMARY KEY,v INTEGER NOT NULL)'),env.DB.prepare('CREATE TABLE IF NOT EXISTS visit_devices(h TEXT PRIMARY KEY)')]).then(()=>true);
+    await globalThis._vstats;
+    await env.DB.batch([env.DB.prepare("INSERT INTO visit_stats(k,v) VALUES('opens',1) ON CONFLICT(k) DO UPDATE SET v=v+1"),env.DB.prepare('INSERT OR IGNORE INTO visit_devices(h) VALUES(?)').bind(h)]);
+    return response({ok:true});
+   }catch{console.error('visit failed');return response({error:'server'},500);}
+  }
+  if(vpath==='/stats'&&req.method==='GET'){
+   try{
+    const key=new URL(req.url).searchParams.get('key')||'';const expected=(env.STATS_KEY||'').trim();
+    if(!expected)return response({error:'not_ready'},503);
+    let diff=key.length^expected.length;for(let i=0;i<Math.max(key.length,expected.length);i++)diff|=(key.charCodeAt(i)||0)^(expected.charCodeAt(i)||0);
+    if(diff)return response({error:'not_found'},404);
+    if(!globalThis._vstats)globalThis._vstats=env.DB.batch([env.DB.prepare('CREATE TABLE IF NOT EXISTS visit_stats(k TEXT PRIMARY KEY,v INTEGER NOT NULL)'),env.DB.prepare('CREATE TABLE IF NOT EXISTS visit_devices(h TEXT PRIMARY KEY)')]).then(()=>true);
+    await globalThis._vstats;
+    const opens=(await env.DB.prepare("SELECT v FROM visit_stats WHERE k='opens'").first())?.v||0;
+    const devices=(await env.DB.prepare('SELECT COUNT(*) AS c FROM visit_devices').first())?.c||0;
+    const html='<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>إحصائيات مِسْبَحَة</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0b1426;color:#f5ead0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}main{text-align:center;padding:24px}h1{font-size:20px;color:#d4af37;font-weight:600;margin:0 0 20px}div.n{font-size:42px;font-weight:700;margin:4px 0 18px}div.l{font-size:15px;color:#c9d4e5}p{color:#8fa0b8;font-size:12px;max-width:260px;margin:26px auto 0;line-height:1.8}</style></head><body><main><h1>إحصائيات مِسْبَحَة</h1><div class="l">مرات فتح الموقع</div><div class="n">'+opens+'</div><div class="l">الأجهزة تقريبًا</div><div class="n">'+devices+'</div><p>كل فتح للموقع يُحسب مرة، وكل جهاز يُحسب مرة واحدة برقم عشوائي مجهول. لا تُخزَّن أسماء ولا مواقع ولا عناوين IP ولا أي بيانات شخصية.</p></main></body></html>';
+    return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
+   }catch{console.error('stats failed');return response({error:'server'},500);}
+  }if(new URL(req.url).pathname==='/health'){if(!env.BOT_TOKEN)return response({ok:false},503);const check=await fetch('https://api.telegram.org/bot'+env.BOT_TOKEN.trim()+'/getMe');const info=await check.json();return response({ok:!!info.ok,bot:info.result?.username||null},info.ok?200:503);}if(req.method!=='POST'||new URL(req.url).pathname!=='/reminders')return response({error:'not_found'},404);
   if(req.headers.get('Origin')&&req.headers.get('Origin')!==origin)return response({error:'origin'},403);
   if(!env.BOT_TOKEN)return response({error:'not_ready'},503);env.BOT_TOKEN=env.BOT_TOKEN.trim();let body,user;try{const raw=await req.text();if(raw.length>16000)return response({error:'size'},413);body=JSON.parse(raw);user=await authenticate(body.initData,env.BOT_TOKEN);}catch{return response({error:'unauthorized'},401);}
   try{
