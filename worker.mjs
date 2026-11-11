@@ -24,7 +24,7 @@ export default {
   if(req.headers.get('Origin')&&req.headers.get('Origin')!==origin)return response({error:'origin'},403);
   if(!env.BOT_TOKEN)return response({error:'not_ready'},503);let body,user;try{const raw=await req.text();if(raw.length>16000)return response({error:'size'},413);body=JSON.parse(raw);user=await authenticate(body.initData,env.BOT_TOKEN);}catch{return response({error:'unauthorized'},401);}
   try{
-   if(body.action==='list'){const r=await env.DB.prepare('SELECT id,time,timezone,dhikr,enabled FROM reminders WHERE user_id=? ORDER BY time').bind(user).all();return response({reminders:r.results});}
+   if(body.action==='list'){const r=await env.DB.prepare('SELECT id,time,dhikr,enabled FROM reminders WHERE user_id=? ORDER BY time').bind(user).all();return response({reminders:r.results});}
    if(body.action==='delete'){if(typeof body.id!=='string')return response({error:'invalid'},400);await env.DB.prepare('DELETE FROM reminders WHERE id=? AND user_id=?').bind(body.id,user).run();return response({ok:true});}
    if(body.action!=='add'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(body.time||'')||!Number.isInteger(body.dhikr)||body.dhikr<0||body.dhikr>=ADHKAR.length||typeof body.timezone!=='string'||body.timezone.length>80)return response({error:'invalid'},400);
    let next;try{next=nextOccurrence(body.time,body.timezone);}catch{return response({error:'timezone'},400);}
@@ -35,7 +35,7 @@ export default {
  for(const r of rows.results){const next=nextOccurrence(r.time,r.timezone,now);const claim=await env.DB.prepare('UPDATE reminders SET next_run=? WHERE id=? AND next_run=? AND enabled=1').bind(next,r.id,r.next_run).run();if(!claim.meta.changes)continue;
   // Do not send stale notifications after a long outage. Atomic claim avoids duplicate cron sends.
   if(now-r.next_run>15*60000)continue;
-  try{const res=await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:r.user_id,text:'حان وقت الذِّكر 🌿\n\n'+ADHKAR[r.dhikr],reply_markup:{inline_keyboard:[[{text:'افتح المِسبحة',web_app:{url:'https://misbaha-daily.github.io/misbaha/'}}]]}})});const out=await res.json();if(!out.ok){if(out.error_code===403)await env.DB.prepare('UPDATE reminders SET enabled=0 WHERE id=?').bind(r.id).run();console.error('telegram send rejected',out.error_code);}}catch{console.error('telegram send not confirmed');}
+  try{const res=await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:r.user_id,text:'حان وقت الذِّكر 🌿\n\n'+ADHKAR[r.dhikr],reply_markup:{inline_keyboard:[[{text:'افتح المِسبحة',web_app:{url:'https://misbaha-daily.github.io/misbaha/'}}]]}})});const out=await res.json();if(out.ok){await env.DB.prepare('UPDATE reminders SET last_sent=?,last_error=NULL,retries=0 WHERE id=?').bind(now,r.id).run();}else{await env.DB.prepare('UPDATE reminders SET last_error=? WHERE id=?').bind(out.error_code||500,r.id).run();if(out.error_code===429&&(r.retries||0)<3){await env.DB.prepare('UPDATE reminders SET next_run=?,retries=retries+1 WHERE id=?').bind(now+Math.max(60,Math.min(900,out.parameters?.retry_after||60))*1000,r.id).run();}if(out.error_code===403)await env.DB.prepare('UPDATE reminders SET enabled=0 WHERE id=?').bind(r.id).run();console.error('telegram send rejected',out.error_code);}}catch{await env.DB.prepare('UPDATE reminders SET last_error=599 WHERE id=?').bind(r.id).run();console.error('telegram send not confirmed');}
  }
  }
 };
