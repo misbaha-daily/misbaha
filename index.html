@@ -433,27 +433,16 @@ button:disabled {opacity:.5;cursor:wait}
     }
 
     // ---- sound (optional, off by default) ----
-    var audioCtx = null;
+    // A media element uses iPhone's media channel, unlike a muted ambient oscillator.
+    var tapAudio = new Audio('data:audio/wav;base64,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OwBGAEkARAA3ACQADQD2/9//y/++/7j/u//F/9b/6/8CABkALgA9AEUARQA+AC8AHAAFAO//2v/J/7//vP/A/8z/3v/z/wkAHwAxAD0AQwBBADcAKAAUAP//6f/W/8j/wP+//8b/0//l//v/DwAjADMAPQBAADwAMQAgAA0A+P/k/9P/x//C/8T/zP/a/+3/AAAVACcANAA7ADwANgAqABkABgDy/+D/0f/I/8X/yP/S/+H/9P8HABkAKQA0ADoAOAAxACMAEgAAAO3/3f/Q/8n/yP/N/9j/6P/6/wwAHQArADQANwA0ACsAHQAMAPr/6f/a/8//yv/L/9L/3//u/wAAEQAhAC0AMwA0AC8AJQAXAAYA9f/l/9j/0P/N/8//2P/l//T/BQAVACMALQAyADEAKwAgABEAAADx/+L/1//Q/8//1P/d/+r/+v8JABkAJQAtADAALQAmABoACwD8/+3/4P/W/9L/0v/Y/+L/8P///w4AHAAmACwALQAqACEAFQAGAPj/6f/e/9b/0//W/93/5//1/wMAEQAeACcAKwArACUAHAAPAAEA9P/n/93/1//W/9n/4f/t//r/BwAVAB8AJwAqACgAIQAXAAoA/v/w/+X/3P/Y/9j/3f/m//H///8LABcAIQAmACcAJAAdABIABgD6/+3/4//c/9n/2//h/+r/9v8CAA4AGQAhACUAJQAhABkADgACAPb/6//i/93/2//e/+X/7v/6/wYAEQAbACEAJAAjAB0AFQAKAP//8//p/+H/3f/d/+H/6f/z//7/CQATABwAIQAiACAAGgARAAYA+//w/+f/4f/f/+D/5f/t//f/AQAMABUAHAAgACAAHQAWAA0AAgD4/+7/5v/h/+D/4v/o//D/+v8EAA4AFwAdAB8AHgAaABIACQAAAPX/7P/m/+L/4v/l/+v/9P/+/wcAEAAYABwAHgAcABcADwAFAPz/8//r/+b/4//k/+j/7//3/wAACgASABgAHAAcABkAEwALAAIA+v/x/+r/5v/k/+b/6//y//v/AwAMABMAGQAbABoAFwAQAAgAAAD3/+//6v/m/+b/6P/u//X//v8GAA4AFAAYABoAGAAUAA0ABQD+//X/7v/p/+f/6P/r//H/+P8=');
+    tapAudio.preload = 'auto';
+    tapAudio.setAttribute('playsinline', '');
     function clickSound() {
         if (!state || !state.snd) return;
         try {
-            var Audio = window.AudioContext || window.webkitAudioContext;
-            if (!Audio) return;
-            if (!audioCtx || audioCtx.state === 'closed') audioCtx = new Audio();
-            var ctx = audioCtx;
-            function play() {
-                if (!state.snd || ctx.state !== 'running') return;
-                var o = ctx.createOscillator(), g = ctx.createGain();
-                o.type = 'sine'; o.frequency.value = 1180;
-                g.gain.setValueAtTime(0.06, ctx.currentTime);
-                g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.07);
-                o.connect(g); g.connect(ctx.destination);
-                o.onended = function () { o.disconnect(); g.disconnect(); };
-                o.start(); o.stop(ctx.currentTime + 0.08);
-            }
-            // Resume inside a click gesture, including after a WebView interruption.
-            if (ctx.state !== 'running') ctx.resume().then(play).catch(function () {});
-            else play();
+            tapAudio.currentTime = 0;
+            var playing = tapAudio.play();
+            if (playing && playing.catch) playing.catch(function () {});
         } catch (e) {}
     }
 
@@ -532,7 +521,9 @@ button:disabled {opacity:.5;cursor:wait}
         }
     }
     counterEl.addEventListener('pointerdown', function (e) { e.preventDefault(); tap(); });
-    counterEl.addEventListener('click', clickSound);
+    var lastSoundTouch = 0;
+    counterEl.addEventListener('touchend', function () { lastSoundTouch = Date.now(); clickSound(); }, { passive: true });
+    counterEl.addEventListener('click', function () { if (Date.now() - lastSoundTouch > 500) clickSound(); });
 
     $('btn-minus').addEventListener('click', function () {
         if (!ready || state.count <= 0) return;
@@ -586,7 +577,7 @@ button:disabled {opacity:.5;cursor:wait}
         update({ vib: !state.vib });
         if (!state.vib) { try { if (navigator.vibrate) navigator.vibrate(20); } catch (e) {} }
     });
-    $('btn-snd').addEventListener('click', function () { if (!ready) return; update({ snd: !state.snd }); if (state.snd) clickSound(); });
+    $('btn-snd').addEventListener('click', function () { if (!ready) return; update({ snd: !state.snd }); if (state.snd) clickSound(); else { tapAudio.pause(); tapAudio.currentTime = 0; } });
 
     // target chips
     TARGETS.forEach(function (t) {
