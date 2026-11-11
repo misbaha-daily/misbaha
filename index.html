@@ -383,6 +383,8 @@ button:disabled {opacity:.5;cursor:wait}
 .session-row .s-meta { text-align: left; flex: none; }
 .session-row .s-n { display: block; font-weight: 800; font-size: 16px; color: var(--gold-hi); font-variant-numeric: tabular-nums; }
 .session-row .s-t { display: block; font-size: 11px; color: var(--cream-dim); font-variant-numeric: tabular-nums; }
+.session-row.live { border-color: rgba(201, 162, 75, .5); }
+.session-row.live .s-t { color: var(--gold); font-weight: 700; }
 .sessions-empty { font-size: 13.5px; color: var(--cream-dim); text-align: center; padding: 18px 0 6px; }
 /* light theme: cream and gold, same identity */
 body.theme-light { background: #f4ecd7; }
@@ -867,9 +869,12 @@ body.theme-light { background: #f4ecd7; }
         loadSessions();
         var nowD = new Date();
         var todayK = dayKey(nowD.getTime());
+        // the in-progress count appears as a live entry until it is finalized (switch / reset / target)
+        var live = (ready && state && state.count > 0) ? [state.dhikr, Math.round(state.count), nowD.getTime()] : null;
+        var view = live ? sessions.concat([live]) : sessions;
         var sums = {}, total = 0, monthSum = 0;
         var mY = nowD.getFullYear(), mM = nowD.getMonth();
-        sessions.forEach(function (r) {
+        view.forEach(function (r) {
             var k = dayKey(r[2]);
             sums[k] = (sums[k] || 0) + r[1];
             total += r[1];
@@ -916,7 +921,7 @@ body.theme-light { background: #f4ecd7; }
         // sessions list, newest first, grouped by day
         var list = $('session-list');
         list.innerHTML = '';
-        if (!sessions.length) {
+        if (!view.length) {
             var empty = document.createElement('div');
             empty.className = 'sessions-empty';
             empty.textContent = 'لا جلسات بعد';
@@ -925,8 +930,9 @@ body.theme-light { background: #f4ecd7; }
         }
         var yestK = dayKey(nowD.getTime() - 86400000);
         var lastHead = '';
-        for (var si = sessions.length - 1; si >= 0; si--) {
-            var r = sessions[si];
+        for (var si = view.length - 1; si >= 0; si--) {
+            var r = view[si];
+            var isLive = live && si === view.length - 1;
             var k = dayKey(r[2]);
             if (k !== lastHead) {
                 lastHead = k;
@@ -936,7 +942,7 @@ body.theme-light { background: #f4ecd7; }
                 list.appendChild(head);
             }
             var row = document.createElement('div');
-            row.className = 'session-row';
+            row.className = 'session-row' + (isLive ? ' live' : '');
             var dz = document.createElement('div');
             dz.className = 's-dhikr';
             dz.textContent = ADHKAR[r[0]] || ADHKAR[0];
@@ -947,7 +953,7 @@ body.theme-light { background: #f4ecd7; }
             nEl.textContent = String(r[1]);
             var tEl = document.createElement('span');
             tEl.className = 's-t';
-            tEl.textContent = fmtTime ? fmtTime.format(new Date(r[2])) : '';
+            tEl.textContent = isLive ? 'الآن' : (fmtTime ? fmtTime.format(new Date(r[2])) : '');
             meta.appendChild(nEl); meta.appendChild(tEl);
             row.appendChild(dz); row.appendChild(meta);
             list.appendChild(row);
